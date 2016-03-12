@@ -1,0 +1,41 @@
+#![allow(dead_code)]
+
+extern crate piston_window;
+
+use piston_window::*;
+
+mod engine;
+mod render;
+mod interface;
+
+fn main() {
+    let window: PistonWindow = WindowSettings::new("dio", [800, 600])
+        .exit_on_esc(true).samples(4).vsync(true).build().unwrap();
+
+    let mut world = Box::new(engine::world::World::new(engine::world::WorldData::new(14.0, 10.0)));
+    let (cx, cy) = world.data.get_centre_pos();
+    let cam = interface::camera::Camera::new(cx, cy, 50.0);
+    let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
+    world.push_entity(Box::new(gnd));
+
+    for e in window {
+        match e.event {
+            Option::Some(ref v) => match *v {
+                Event::Input(ref i) => match *i {
+                    Input::Press(ref button) => match *button {
+                        Button::Mouse(mbutton) => println!("{:?}", mbutton),
+                        _ => {},
+                    },
+                    _ => {},
+                },
+                Event::Update(UpdateArgs{dt}) => {
+                    world.update(dt as f32)
+                },
+                _ => {},
+            },
+            Option::None => {},
+        }
+
+        render::render(&e, &cam, &mut world);
+    }
+}
