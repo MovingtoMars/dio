@@ -19,6 +19,10 @@ pub trait Entity {
 
     fn render(&self, b2world: &b2::World, win: &PistonWindow, cam: &Camera);
     fn update(&mut self, world: &mut WorldData, dt: f32);
+
+    fn as_player(&mut self) -> Option<&mut Player> {
+        Option::None
+    }
 }
 
 pub struct Ground {
@@ -31,6 +35,7 @@ impl Ground {
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, hw: f32, hh: f32) -> Ground {
         let mut def = b2::BodyDef::new();
         def.body_type = b2::BodyType::Static;
+        def.fixed_rotation = true;
         let body = world_data.b2world.create_body(&def);
 
         let mut shape = b2::PolygonShape::new();
@@ -38,7 +43,7 @@ impl Ground {
 
         world_data.b2world.get_body_mut(body).create_fast_fixture(&shape, 1.0);
 
-        world_data.b2world.get_body_mut(body).set_transform(&b2::Vec2{x: x, y: y }, 1.0);
+        world_data.b2world.get_body_mut(body).set_transform(&b2::Vec2{x: x, y: y}, 0.0);
 
         Ground{body: body, hw: hw, hh: hh}
     }
@@ -47,7 +52,7 @@ impl Ground {
 impl Entity for Ground {
     fn render(&self, b2world: &b2::World, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(b2world);
-        render::fill_rectangle(win, cam, x, y, w, h);
+        render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h);
     }
 
     fn get_body_handle(&mut self) -> &b2::BodyHandle {
@@ -66,5 +71,68 @@ impl Entity for Ground {
 
     fn update(&mut self, _: &mut WorldData, _: f32) {
         //println!("updating ground");
+    }
+}
+
+pub struct Player {
+    body: b2::BodyHandle,
+    hw: f32,
+    hh: f32,
+
+    moving_right: bool,
+}
+
+impl Player {
+    pub fn new(world_data: &mut WorldData, x: f32, y: f32, hw: f32, hh: f32) -> Player {
+        let mut def = b2::BodyDef::new();
+        def.body_type = b2::BodyType::Dynamic;
+        def.fixed_rotation = true;
+        let body = world_data.b2world.create_body(&def);
+
+        let mut shape = b2::PolygonShape::new();
+        shape.set_as_box(hw, hh);
+
+        world_data.b2world.get_body_mut(body).create_fast_fixture(&shape, 1.0);
+
+        world_data.b2world.get_body_mut(body).set_transform(&b2::Vec2{x: x, y: y}, 0.0);
+
+        Player{body: body, hw: hw, hh: hh, moving_right: false}
+    }
+
+    pub fn set_moving_right(&mut self, moving: bool) {
+        self.moving_right = moving;
+    }
+}
+
+impl Entity for Player {
+    fn render(&self, b2world: &b2::World, win: &PistonWindow, cam: &Camera) {
+        let (x, y, w, h) = self.get_bounding_box(b2world);
+        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h);
+    }
+
+    fn get_body_handle(&mut self) -> &b2::BodyHandle {
+        &mut self.body
+    }
+
+    fn get_centre(&self, b2world: &b2::World) -> (f32, f32) {
+        let trans = *b2world.get_body(self.body).position();
+        (trans.x, trans.y)
+    }
+
+    fn get_bounding_box(&self, b2world: &b2::World) -> (f32, f32, f32, f32) {
+        let (cx, cy) = self.get_centre(b2world);
+        (cx - self.hw , cy - self.hh, self.hw * 2.0, self.hh * 2.0)
+    }
+
+    fn update(&mut self, world_data: &mut WorldData, _: f32) {
+        //println!("updating player");
+
+        if self.moving_right {
+            world_data.b2world.get_body_mut(self.body).set_linear_velocity(&b2::Vec2{x: 0.5, y: 0.0});
+        }
+    }
+
+    fn as_player(&mut self) -> Option<&mut Player> {
+        Option::Some(self)
     }
 }

@@ -1,6 +1,9 @@
 extern crate core;
 extern crate box2d;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use engine::entity;
 use engine::entity::Entity;
 
@@ -13,8 +16,10 @@ pub struct WorldData {
 }
 
 pub struct World {
-    entities: Vec<Box<entity::Entity>>,
     pub data: WorldData,
+
+    player: Option<Rc<RefCell<Box<entity::Entity>>>>,
+    entities: Vec<Rc<RefCell<Box<entity::Entity>>>>,
 }
 
 impl WorldData {
@@ -22,7 +27,7 @@ impl WorldData {
         WorldData{
             width: width,
             height: height,
-            b2world: b2::World::new(&b2::Vec2{x: 0.0, y: -9.81}),
+            b2world: b2::World::new(&b2::Vec2{x: 0.0, y: 9.81}),
         }
     }
 
@@ -48,22 +53,32 @@ impl World {
         World{
             data: data,
             entities: Vec::new(),
+            player: Option::None,
         }
     }
 
-    pub fn get_entities_ref(&self) -> &Vec<Box<entity::Entity>> {
+    pub fn get_entities_ref(&self) -> &Vec<Rc<RefCell<Box<entity::Entity>>>> {
         &self.entities
     }
 
-    pub fn push_entity(&mut self, e: Box<entity::Entity>) {
+    pub fn push_entity(&mut self, e: Rc<RefCell<Box<entity::Entity>>>) {
         self.entities.push(e);
     }
 
     pub fn update(&mut self, dt: f32) {
-        //let mut world = RefCell::new(self);
+        self.data.b2world.step(dt, 5, 5);
+
         let data = &mut self.data;
         for e in &mut self.entities {
-            e.update(data, dt);
+            e.borrow_mut().update(data, dt);
         }
+    }
+
+    pub fn set_player(&mut self, player: Option<Rc<RefCell<Box<entity::Entity>>>>) {
+        self.player = player;
+    }
+
+    pub fn get_player(&mut self) -> Option<Rc<RefCell<Box<entity::Entity>>>> {
+        self.player.clone()
     }
 }

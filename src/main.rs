@@ -2,6 +2,9 @@
 
 extern crate piston_window;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use piston_window::*;
 
 mod engine;
@@ -15,8 +18,15 @@ fn main() {
     let mut world = Box::new(engine::world::World::new(engine::world::WorldData::new(14.0, 10.0)));
     let (cx, cy) = world.data.get_centre_pos();
     let cam = interface::camera::Camera::new(cx, cy, 50.0);
-    let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
-    world.push_entity(Box::new(gnd));
+
+    {
+        let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
+        world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
+
+        let player = Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 7.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
+        world.push_entity(player.clone());
+        world.set_player(Option::Some(player));
+    }
 
     for e in window {
         match e.event {
@@ -24,12 +34,21 @@ fn main() {
                 Event::Input(ref i) => match *i {
                     Input::Press(ref button) => match *button {
                         Button::Mouse(mbutton) => println!("{:?}", mbutton),
+                        Button::Keyboard(key) => {
+                            match key {
+                                Key::Right => {
+                                    let p = world.get_player().unwrap();
+                                    p.borrow_mut().as_player().unwrap().set_moving_right(true);
+                                },
+                                _ => {},
+                            }
+                        },
                         _ => {},
                     },
                     _ => {},
                 },
                 Event::Update(UpdateArgs{dt}) => {
-                    world.update(dt as f32)
+                    world.update(dt as f32);
                 },
                 _ => {},
             },
