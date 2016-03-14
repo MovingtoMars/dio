@@ -70,7 +70,7 @@ impl Entity for Ground {
     }
 
     fn update(&mut self, _: &mut WorldData, _: f32) {
-        //println!("updating ground");
+
     }
 }
 
@@ -80,6 +80,7 @@ pub struct Player {
     hh: f32,
 
     moving_right: bool,
+    moving_left: bool,
 }
 
 impl Player {
@@ -96,13 +97,27 @@ impl Player {
 
         world_data.b2world.get_body_mut(body).set_transform(&b2::Vec2{x: x, y: y}, 0.0);
 
-        Player{body: body, hw: hw, hh: hh, moving_right: false}
+        Player{
+            body: body,
+            hw: hw,
+            hh: hh,
+            moving_right: false,
+            moving_left: false,
+        }
     }
 
     pub fn set_moving_right(&mut self, moving: bool) {
         self.moving_right = moving;
     }
+
+    pub fn set_moving_left(&mut self, moving: bool) {
+        self.moving_left = moving;
+    }
 }
+
+const USAIN_BOLT_MAX_SPEED: f32 = 12.4;
+const PLAYER_MAX_SPEED: f32 = USAIN_BOLT_MAX_SPEED;
+const PLAYER_ACCELERATION: f32 = 1.5;
 
 impl Entity for Player {
     fn render(&self, b2world: &b2::World, win: &PistonWindow, cam: &Camera) {
@@ -125,11 +140,30 @@ impl Entity for Player {
     }
 
     fn update(&mut self, world_data: &mut WorldData, _: f32) {
-        //println!("updating player");
+        let mut body = world_data.b2world.get_body_mut(self.body);
 
-        if self.moving_right {
-            world_data.b2world.get_body_mut(self.body).set_linear_velocity(&b2::Vec2{x: 0.5, y: 0.0});
+        let mut vel = body.linear_velocity().clone();
+
+        let touching_ground = true; // TODO
+
+        if touching_ground {
+            if self.moving_right == self.moving_left {
+                let neg = vel.x < 0.0;
+                vel.x = (vel.x.abs() - PLAYER_ACCELERATION).max(0.0);
+                if neg {
+                    vel.x = -vel.x;
+                }
+            } else {
+                if self.moving_left {
+                    vel.x = (vel.x - PLAYER_ACCELERATION).max(-PLAYER_MAX_SPEED);
+                } else if self.moving_right {
+                    vel.x = (vel.x + PLAYER_ACCELERATION).min(PLAYER_MAX_SPEED);
+                }
+
+            }
         }
+
+        body.set_linear_velocity(&vel);
     }
 
     fn as_player(&mut self) -> Option<&mut Player> {
