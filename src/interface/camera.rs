@@ -10,7 +10,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(x: f64, y: f64, pixels_per_metre: f64) -> Camera {
-        Camera{
+        Camera {
             x: x,
             y: y,
             pixels_per_metre: pixels_per_metre,
@@ -39,7 +39,8 @@ impl Camera {
 
     pub fn pos_to_screen(&self, screen_size: piston_window::Size, x: f64, y: f64) -> (f64, f64) {
         let (px, py) = self.pair_metres_to_pixels(x - self.x, y - self.y);
-        (px + (screen_size.width / 2) as f64, py + (screen_size.height / 2) as f64)
+        (px + (screen_size.width / 2) as f64,
+         py + (screen_size.height / 2) as f64)
     }
 
     pub fn screen_to_pos(&self, x: f64, y: f64) -> (f64, f64) {

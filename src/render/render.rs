@@ -11,9 +11,7 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
 
         let (zx, zy) = cam.pos_to_screen(win.draw_size(), 0.0, 0.0);
         let (w, h) = cam.pair_metres_to_pixels(world.data.get_width(), world.data.get_height());
-        rectangle([1.0; 4],
-                [zx, zy, w, h],
-                c.transform, g);
+        rectangle([1.0; 4], [zx, zy, w, h], c.transform, g);
     });
 
     for e in world.get_entities_ref() {
@@ -22,12 +20,16 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
 }
 
 
-pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f64, y: f64, w: f64, h: f64) {
+pub fn fill_rectangle(win: &PistonWindow,
+                      cam: &Camera,
+                      colour: [f32; 4],
+                      x: f64,
+                      y: f64,
+                      w: f64,
+                      h: f64) {
     win.draw_2d(|c, g| {
         let (zx, zy) = cam.pos_to_screen(win.draw_size(), x, y);
         let (w, h) = cam.pair_metres_to_pixels(w, h);
-        rectangle(colour,
-                [zx, zy, w, h],
-                c.transform, g);
+        rectangle(colour, [zx, zy, w, h], c.transform, g);
     });
 }

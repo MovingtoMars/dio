@@ -16,7 +16,7 @@ pub struct BodyDef {
 
 impl BodyDef {
     pub fn new(body_type: BodyType) -> BodyDef {
-        BodyDef{
+        BodyDef {
             density: 0.0,
             body_type: body_type,
         }
@@ -38,7 +38,7 @@ pub struct Body<T> {
 
 impl<T> Body<T> {
     pub fn new(shape: Box<shape::Shape>, def: BodyDef) -> Body<T> {
-        Body{
+        Body {
             user_data: None,
             def: def,
             shape: shape,
@@ -59,7 +59,7 @@ impl<T> Body<T> {
 
         for force in &mut self.applied_forces {
             // a = F/m
-            let a = force.mul(1.0/mass);
+            let a = force.mul(1.0 / mass);
             // v = at
             vel = vel + a.mul(dt);
         }

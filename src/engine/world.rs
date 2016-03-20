@@ -23,10 +23,10 @@ pub struct World {
 
 impl WorldData {
     pub fn new(width: f64, height: f64) -> WorldData {
-        WorldData{
+        WorldData {
             width: width,
             height: height,
-            physics_world: physics::world::World::new(physics::world::Vec2::new(0.0, 9.81)),    
+            physics_world: physics::world::World::new(physics::world::Vec2::new(0.0, 9.81)),
         }
     }
 
@@ -49,7 +49,7 @@ impl WorldData {
 
 impl World {
     pub fn new(data: WorldData) -> World {
-        World{
+        World {
             data: data,
             entities: Vec::new(),
             player: Option::None,
@@ -65,7 +65,7 @@ impl World {
     }
 
     pub fn update(&mut self, dt: f64) {
-        //self.data.b2world.step(dt, 5, 5);
+        // self.data.b2world.step(dt, 5, 5);
         self.data.physics_world.update(dt);
 
         let data = &mut self.data;

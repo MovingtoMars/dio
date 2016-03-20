@@ -12,7 +12,7 @@ pub struct BodyHandle<T> {
 
 impl<T> Clone for BodyHandle<T> {
     fn clone(&self) -> Self {
-        BodyHandle{body: self.body.clone()}
+        BodyHandle { body: self.body.clone() }
     }
 }
 
@@ -26,7 +26,7 @@ pub struct World<T> {
 
 impl<T> World<T> {
     pub fn new(gravity: Vec2) -> World<T> {
-        World{
+        World {
             gravity: gravity,
             bodies: Vec::new(),
             collision_callback: None,
@@ -38,7 +38,7 @@ impl<T> World<T> {
     }
 
     pub fn add_body(&mut self, body: Body<T>) -> BodyHandle<T> {
-        let handle = BodyHandle{body: Rc::new(RefCell::new(body))};
+        let handle = BodyHandle { body: Rc::new(RefCell::new(body)) };
         self.bodies.push(handle.clone());
         handle
     }
@@ -70,7 +70,7 @@ pub struct Vec2 {
 
 impl Vec2 {
     pub fn new(x: f64, y: f64) -> Vec2 {
-        Vec2{x: x, y: y}
+        Vec2 { x: x, y: y }
     }
 
     pub fn dot(self, other: Self) -> f64 {
@@ -82,7 +82,10 @@ impl Vec2 {
     }
 
     pub fn mul(self, scalar: f64) -> Vec2 {
-        Vec2{x: self.x * scalar, y: self.y * scalar}
+        Vec2 {
+            x: self.x * scalar,
+            y: self.y * scalar,
+        }
     }
 
     pub fn coords(self) -> (f64, f64) {
@@ -100,7 +103,10 @@ impl ops::Add for Vec2 {
     type Output = Vec2;
 
     fn add(self, other: Self) -> Self {
-        Vec2{x: self.x + other.x, y: self.y + other.y}
+        Vec2 {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
     }
 }
 
@@ -109,6 +115,9 @@ impl ops::Sub for Vec2 {
     type Output = Vec2;
 
     fn sub(self, other: Self) -> Self {
-        Vec2{x: self.x - other.x, y: self.y - other.y}
+        Vec2 {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
     }
 }

@@ -17,7 +17,7 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(hw: f64, hh: f64) -> Rect {
-        Rect{hw: hw, hh: hh}
+        Rect { hw: hw, hh: hh }
     }
 }
 
@@ -41,12 +41,10 @@ impl Shape for Rect {
 
         let (x1, y1, x2, y2) = self.bounds(x, y);
 
-        let borders = [
-            (Vec2::new(x1, y1), Vec2::new(0.0, y2 - y1)),
-            (Vec2::new(x1, y2), Vec2::new(x2 - x1, 0.0)),
-            (Vec2::new(x2, y1), Vec2::new(0.0, y2 - y1)),
-            (Vec2::new(x1, y1), Vec2::new(x2 - x1, 0.0)),
-        ];
+        let borders = [(Vec2::new(x1, y1), Vec2::new(0.0, y2 - y1)),
+                       (Vec2::new(x1, y2), Vec2::new(x2 - x1, 0.0)),
+                       (Vec2::new(x2, y1), Vec2::new(0.0, y2 - y1)),
+                       (Vec2::new(x1, y1), Vec2::new(x2 - x1, 0.0))];
 
         for &(borigin, bdir) in &borders {
             let inter = lines_intersect(origin, dir, borigin, bdir);
@@ -58,7 +56,7 @@ impl Shape for Rect {
                         closest_inter = inter;
                     }
                 }
-                None => {},
+                None => {}
             }
         }
 
@@ -74,8 +72,8 @@ pub fn lines_intersect(p1: Vec2, d1: Vec2, p2: Vec2, d2: Vec2) -> Option<Vec2> {
 
     let d = x11 * y01 - x01 * y11;
 
-    //let s = (1.0/d) * ((x00 - x10) * y01 - (y00 - y10) * x01);
-    let t = (1.0/d) * -(-(x00 - x10) * y11 + (y00 - y10) * x11);
+    // let s = (1.0/d) * ((x00 - x10) * y01 - (y00 - y10) * x01);
+    let t = (1.0 / d) * -(-(x00 - x10) * y11 + (y00 - y10) * x11);
 
     if t >= 0.0 && t <= 1.0 {
         Option::Some(p1 + d1.mul(t))
@@ -92,6 +90,12 @@ mod tests {
 
     #[test]
     fn test_lines_intersect() {
-        assert_eq!(lines_intersect(Vec2::new(0.0, 0.0), Vec2::new(5.0, 5.0), Vec2::new(2.0, 0.0), Vec2::new(0.0, 6.0)).unwrap().coords(), (2.0, 2.0));
+        assert_eq!(lines_intersect(Vec2::new(0.0, 0.0),
+                                   Vec2::new(5.0, 5.0),
+                                   Vec2::new(2.0, 0.0),
+                                   Vec2::new(0.0, 6.0))
+                       .unwrap()
+                       .coords(),
+                   (2.0, 2.0));
     }
 }
