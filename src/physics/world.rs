@@ -69,23 +69,24 @@ impl<T> World<T> {
                 use std::borrow::BorrowMut;
                 let (mut a, mut b) = self.bodies.split_at_mut(i + 1);
                 let alen = a.len();
+
                 let h1 = &mut a[alen - 1];
-                let h2 = &mut b[0];
+                for h2 in &mut b.iter() {
+                    let mut b1 = (*h1.body).borrow_mut();
+                    let mut b2 = (*h2.body).borrow_mut();
 
-                let mut b1 = (*h1.body).borrow_mut();
-                let mut b2 = (*h2.body).borrow_mut();
-
-                let collision = check_body_collision(&mut *b1, &mut *b2);
-                match collision {
-                    Some(c) => {
-                        match self.collision_callback {
-                            Some(func) => {
-                                func(c, &mut *b1, &mut *b2);
-                            },
-                            None => {},
-                        }
-                    },
-                    None => {},
+                    let collision = check_body_collision(&mut *b1, &mut *b2);
+                    match collision {
+                        Some(c) => {
+                            match self.collision_callback {
+                                Some(func) => {
+                                    func(c, &mut *b1, &mut *b2);
+                                },
+                                None => {},
+                            }
+                        },
+                        None => {},
+                    }
                 }
             }
         }
