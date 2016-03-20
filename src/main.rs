@@ -13,7 +13,10 @@ mod interface;
 mod physics;
 
 fn main() {
+    let opengl = OpenGL::V2_1;
+
     let window: PistonWindow = WindowSettings::new("dio", [800, 600])
+        .opengl(opengl)
         .exit_on_esc(true)
         .samples(4)
         .vsync(true)

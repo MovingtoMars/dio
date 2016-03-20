@@ -32,6 +32,8 @@ pub struct Body<T> {
 
     def: BodyDef,
     shape: Box<shape::Shape>,
+
+    applied_forces: Vec<world::Vec2>,
 }
 
 impl<T> Body<T> {
@@ -42,7 +44,12 @@ impl<T> Body<T> {
             shape: shape,
             vel: world::Vec2::default(),
             pos: world::Vec2::default(),
+            applied_forces: Vec::new(),
         }
+    }
+
+    pub fn apply_force(&mut self, force: world::Vec2) {
+        self.applied_forces.push(force);
     }
 }
 
