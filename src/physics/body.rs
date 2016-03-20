@@ -44,6 +44,7 @@ pub struct Body<T> {
     shape: Box<shape::Shape>,
 
     applied_forces: Vec<Vec2>,
+    applied_impulses: Vec<Vec2>,
 }
 
 impl<T> Body<T> {
@@ -55,6 +56,7 @@ impl<T> Body<T> {
             vel: Vec2::default(),
             pos: Vec2::default(),
             applied_forces: Vec::new(),
+            applied_impulses: Vec::new(),
         }
     }
 
@@ -85,6 +87,14 @@ impl<T> Body<T> {
 
     pub fn apply_force(&mut self, force: Vec2) {
         self.applied_forces.push(force);
+    }
+
+    pub fn apply_impulse(&mut self, impulse: Vec2) {
+        self.applied_impulses.push(impulse);
+    }
+
+    pub fn momentum(&self) -> Vec2 {
+        self.vel.mul(self.mass())
     }
 
     pub fn borrow_shape(&self) -> &shape::Shape {
