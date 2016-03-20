@@ -4,7 +4,10 @@ use std::cell::{RefCell, RefMut, Ref};
 use std::rc::Rc;
 
 use physics;
-use physics::body::Body;
+use physics::body::{self, Body};
+
+pub const COLLISION_BUFFER: f64 = 0.005;
+pub const VELOCITY_THRESHOLD: f64 = 1.0; // collisions below this are treated inelastically
 
 pub struct BodyHandle<T> {
     body: Rc<RefCell<Body<T>>>,
@@ -21,7 +24,7 @@ pub struct World<T> {
 
     bodies: Vec<BodyHandle<T>>,
 
-    collision_callback: Option<fn(&mut Body<T>, &mut Body<T>)>,
+    collision_callback: Option<fn(body::Collision, &mut Body<T>, &mut Body<T>)>,
 }
 
 impl<T> World<T> {
@@ -33,7 +36,7 @@ impl<T> World<T> {
         }
     }
 
-    pub fn set_collision_callback(&mut self, callback: Option<fn(&mut Body<T>, &mut Body<T>)>) {
+    pub fn set_collision_callback(&mut self, callback: Option<fn(body::Collision, &mut Body<T>, &mut Body<T>)>) {
         self.collision_callback = callback;
     }
 
@@ -59,7 +62,38 @@ impl<T> World<T> {
             }
             body.update(dt);
         }
+
+        if self.bodies.len() > 1 {
+            for i in 0..(self.bodies.len() - 1) {
+                let (mut a, mut b) = self.bodies.split_at_mut(i + 1);
+                let alen = a.len();
+                let h1 = &mut a[alen - 1];
+                let h2 = &mut b[0];
+
+                use std::borrow::BorrowMut;
+                let mut b1 = (*h1.body).borrow_mut();
+                let mut b2 = (*h2.body).borrow_mut();
+
+                let collision = check_body_collision(&mut *b1, &mut *b2);
+                match collision {
+                    Some(c) => {
+                        match self.collision_callback {
+                            Some(func) => {
+                                func(c, &mut *b1, &mut *b2);
+                            },
+                            None => {},
+                        }
+                    },
+                    None => {},
+                }
+            }
+        }
     }
+}
+
+/// This function is called every time World updates. Note that this function will be called a maximum of one time for every possible pair of bodies, on each iteration.
+fn check_body_collision<T, U>(b1: &mut Body<T>, b2: &mut Body<U>) -> Option<body::Collision> {
+    b1.borrow_shape().collides_with(b1.pos, b2.borrow_shape(), b2.pos)
 }
 
 #[derive(Clone,Copy,Default)]
