@@ -1,3 +1,2 @@
 # dio
-
-Building requires Box2d, with the headers somewhere Cargo can find them.
+It works every time, 60% of the time.
