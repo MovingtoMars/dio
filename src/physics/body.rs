@@ -76,6 +76,10 @@ impl<T> Body<T> {
             vel = vel + a.mul(dt);
         }
 
+        for impulse in &mut self.applied_impulses {
+            vel = vel + impulse.mul(1.0 / mass);
+        }
+
         self.vel = vel;
 
         if self.def.body_type != BodyType::Static {
