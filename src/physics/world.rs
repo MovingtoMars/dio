@@ -101,12 +101,12 @@ impl<T> World<T> {
 fn sheep_callback<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) {
     if b2.vel.y > 0.0 {
     let collision_restitution = (b1.restitution()+b2.restitution())/2.0;
-    let deformation_impulse_b1: Vec2 = sheep.normal_a.mul(b1.mass()*(b1.vel.y.abs()));
-    let deformation_impulse_b2: Vec2 = sheep.normal_b.mul(b2.mass()*(b2.vel.y.abs()));
+    let deformation_impulse_b1: Vec2 = sheep.normal_a.mul(b1.mass() * b1.vel.y.abs());
+    let deformation_impulse_b2: Vec2 = sheep.normal_b.mul(b2.mass() * b2.vel.y.abs());
     let restoration_impulse_b1: Vec2 = deformation_impulse_b1.mul(collision_restitution);
     let restoration_impulse_b2: Vec2 = deformation_impulse_b2.mul(collision_restitution);
-    let impulse_b1 = Vec2::new(deformation_impulse_b1.x+restoration_impulse_b1.x, deformation_impulse_b1.y+restoration_impulse_b1.y);
-    let impulse_b2 = Vec2::new(deformation_impulse_b2.x+restoration_impulse_b2.x, deformation_impulse_b2.y+restoration_impulse_b2.y);
+    let impulse_b1 = deformation_impulse_b1 + restoration_impulse_b1;
+    let impulse_b2 = deformation_impulse_b2 + restoration_impulse_b2;
     b1.apply_impulse(impulse_b1);
     b2.apply_impulse(impulse_b2);
     }
