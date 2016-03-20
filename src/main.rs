@@ -31,7 +31,7 @@ fn main() {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
 
-        let player = Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 1.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
+        let player = Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
         world.push_entity(player.clone());
         world.set_player(Option::Some(player));
     }

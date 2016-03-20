@@ -84,7 +84,7 @@ pub struct Player {
 
 impl Player {
     pub fn new(world_data: &mut WorldData, x: f64, y: f64, hw: f64, hh: f64) -> Player {
-        let mut def = physics::body::BodyDef::new(physics::body::BodyType::Static);
+        let mut def = physics::body::BodyDef::new(physics::body::BodyType::Dynamic);
         def.density = 1.0;
         let shape = physics::shape::Rect::new(hw, hh);
         let mut body = physics::body::Body::new(Box::new(shape), def);

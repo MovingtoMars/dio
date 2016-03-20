@@ -9,6 +9,7 @@ pub trait Shape {
     fn mass(&self, density: f64) -> f64;
 }
 
+#[derive(Copy,Clone)]
 pub struct Rect {
     hw: f64,
     hh: f64,

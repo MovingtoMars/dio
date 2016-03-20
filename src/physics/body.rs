@@ -1,7 +1,7 @@
 use physics::shape;
 use physics::world;
 
-#[derive(Clone,Copy)]
+#[derive(Clone,Copy,PartialEq,Eq)]
 pub enum BodyType {
     Static,
     Kinematic,
@@ -48,8 +48,41 @@ impl<T> Body<T> {
         }
     }
 
+    pub fn body_def(&self) -> BodyDef {
+        self.def
+    }
+
+    pub fn update(&mut self, dt: f64) {
+        let mass = self.mass();
+
+        let mut vel = self.vel;
+
+        for force in &mut self.applied_forces {
+            // a = F/m
+            let a = force.mul(1.0/mass);
+            // v = at
+            vel = vel + a.mul(dt);
+        }
+
+        self.vel = vel;
+
+        if self.def.body_type != BodyType::Static {
+            self.pos = self.pos + self.vel.mul(dt);
+        }
+
+        self.applied_forces.clear();
+    }
+
     pub fn apply_force(&mut self, force: world::Vec2) {
         self.applied_forces.push(force);
+    }
+
+    pub fn borrow_shape(&self) -> &shape::Shape {
+        &*self.shape
+    }
+
+    pub fn mass(&self) -> f64 {
+        self.shape.mass(self.def.density)
     }
 }
 

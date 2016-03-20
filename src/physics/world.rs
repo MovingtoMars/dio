@@ -3,6 +3,7 @@ use std::ops;
 use std::cell::{RefCell, RefMut, Ref};
 use std::rc::Rc;
 
+use physics;
 use physics::body::Body;
 
 pub struct BodyHandle<T> {
@@ -51,7 +52,13 @@ impl<T> World<T> {
     }
 
     pub fn update(&mut self, dt: f64) {
-
+        for body in &mut self.bodies {
+            let mut body = body.body.borrow_mut();
+            if body.body_def().body_type == physics::body::BodyType::Dynamic {
+                body.apply_force(self.gravity);
+            }
+            body.update(dt);
+        }
     }
 }
 
