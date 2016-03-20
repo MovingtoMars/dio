@@ -29,10 +29,11 @@ pub struct World<T> {
 
 impl<T> World<T> {
     pub fn new(gravity: Vec2) -> World<T> {
+    let sheep: fn(body::Collision, &mut Body<T>, &mut Body<T>) = sheep_callback; // yeah i fiddled with this thing because i don't know where to call the set_collision_callback function
         World {
             gravity: gravity,
             bodies: Vec::new(),
-            collision_callback: None,
+            collision_callback: Option::Some(sheep),
         }
     }
 
@@ -65,12 +66,12 @@ impl<T> World<T> {
 
         if self.bodies.len() > 1 {
             for i in 0..(self.bodies.len() - 1) {
+                use std::borrow::BorrowMut;
                 let (mut a, mut b) = self.bodies.split_at_mut(i + 1);
                 let alen = a.len();
                 let h1 = &mut a[alen - 1];
                 let h2 = &mut b[0];
 
-                use std::borrow::BorrowMut;
                 let mut b1 = (*h1.body).borrow_mut();
                 let mut b2 = (*h2.body).borrow_mut();
 
@@ -88,6 +89,25 @@ impl<T> World<T> {
                 }
             }
         }
+    }
+}
+
+// sheep testing
+// I ONLY DID IT FOR BOUNCING UP BECAUSE IM LAZY AND ONLY FOR THE PURPOSE OF GETTING IT DONE and seeing if it works
+// i am tired at 1:30a.m. ok i don't want to add the other types of collisions
+// when the body settles to zero velocity, it starts edging itself downwards lol but that's because
+// it doesn't realise that the player is on the ground and it assumes that it's still a 'collision' or something, whatever
+fn sheep_callback<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) {
+    if b2.vel.y > 0.0 {
+    let collision_restitution = (b1.restitution()+b2.restitution())/2.0;
+    let deformation_impulse_b1: Vec2 = sheep.normal_a.mul(b1.mass()*(b1.vel.y.abs()));
+    let deformation_impulse_b2: Vec2 = sheep.normal_b.mul(b2.mass()*(b2.vel.y.abs()));
+    let restoration_impulse_b1: Vec2 = deformation_impulse_b1.mul(collision_restitution);
+    let restoration_impulse_b2: Vec2 = deformation_impulse_b2.mul(collision_restitution);
+    let impulse_b1 = Vec2::new(deformation_impulse_b1.x+restoration_impulse_b1.x, deformation_impulse_b1.y+restoration_impulse_b1.y);
+    let impulse_b2 = Vec2::new(deformation_impulse_b2.x+restoration_impulse_b2.x, deformation_impulse_b2.y+restoration_impulse_b2.y);
+    b1.apply_impulse(impulse_b1);
+    b2.apply_impulse(impulse_b2);
     }
 }
 

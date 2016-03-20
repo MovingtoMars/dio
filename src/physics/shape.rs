@@ -36,6 +36,7 @@ impl Shape for Rect {
                 let (cx, cy) = ((x1 + x2) / 2.0, (y1 + y2) / 2.0);
                 let (ox1, oy1, ox2, oy2) = rect.bounds(other_pos);
                 //let (cox1, cox2) = ((ox1 + ox2) / 2.0, (oy1 + oy2) / 2.0);
+
                 let collides = !(y2 < oy1 || y1 > oy2 || x1 > ox2 || x2 < ox1);
                 if !collides {
                     return None;

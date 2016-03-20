@@ -28,7 +28,7 @@ impl BodyDef {
         BodyDef {
             density: 0.0,
             body_type: body_type,
-            restitution: 0.0,
+            restitution: 1.0, // was 0.0 before i fiddled with it
         }
     }
 }
@@ -40,7 +40,7 @@ pub struct Body<T> {
     pub vel: Vec2,
     pub pos: Vec2,
 
-    def: BodyDef,
+    pub def: BodyDef,
     shape: Box<shape::Shape>,
 
     applied_forces: Vec<Vec2>,
@@ -87,6 +87,7 @@ impl<T> Body<T> {
         }
 
         self.applied_forces.clear();
+        self.applied_impulses.clear(); // you forgot to put this in you dummy
     }
 
     pub fn apply_force(&mut self, force: Vec2) {
@@ -107,5 +108,9 @@ impl<T> Body<T> {
 
     pub fn mass(&self) -> f64 {
         self.shape.mass(self.def.density)
+    }
+
+    pub fn restitution(&self) -> f64 {
+        self.def.restitution
     }
 }
