@@ -6,6 +6,7 @@ pub trait Shape {
     fn bounds(&self, x: f64, y: f64) -> (f64, f64, f64, f64);
     fn cast_ray(&self, x: f64, y: f64, origin: Vec2, dir: Vec2) -> Option<Vec2>;
     fn contains(&self, x: f64, y: f64, point: Vec2) -> bool;
+    fn mass(&self, density: f64) -> f64;
 }
 
 pub struct Rect {
@@ -22,6 +23,10 @@ impl Rect {
 impl Shape for Rect {
     fn bounds(&self, x: f64, y: f64) -> (f64, f64, f64, f64) {
         (x - self.hw, y - self.hh, x + self.hw, y + self.hh)
+    }
+
+    fn mass(&self, density: f64) -> f64 {
+        (self.hw * 2.0) * (self.hh * 2.0) * density
     }
 
     fn contains(&self, x: f64, y: f64, point: Vec2) -> bool {
