@@ -1,5 +1,4 @@
 extern crate core;
-extern crate box2d;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -7,12 +6,12 @@ use std::rc::Rc;
 use engine::entity;
 use engine::entity::Entity;
 
-use self::box2d::b2;
+use physics;
 
 pub struct WorldData {
-    width: f32, // metres
-    height: f32, // metres
-    pub b2world: b2::World,
+    width: f64, // metres
+    height: f64, // metres
+    pub physics_world: physics::world::World<Rc<RefCell<Box<Entity>>>>,
 }
 
 pub struct World {
@@ -23,27 +22,27 @@ pub struct World {
 }
 
 impl WorldData {
-    pub fn new(width: f32, height: f32) -> WorldData {
+    pub fn new(width: f64, height: f64) -> WorldData {
         WorldData{
             width: width,
             height: height,
-            b2world: b2::World::new(&b2::Vec2{x: 0.0, y: 9.81}),
+            physics_world: physics::world::World::new(physics::world::Vec2::new(0.0, 9.81)),    
         }
     }
 
-    pub fn get_dimensions(&self) -> (f32, f32) {
+    pub fn get_dimensions(&self) -> (f64, f64) {
         (self.width, self.height)
     }
 
-    pub fn get_centre_pos(&self) -> (f32, f32) {
+    pub fn get_centre_pos(&self) -> (f64, f64) {
         (self.width / 2.0, self.height / 2.0)
     }
 
-    pub fn get_width(&self) -> f32 {
+    pub fn get_width(&self) -> f64 {
         self.width
     }
 
-    pub fn get_height(&self) -> f32 {
+    pub fn get_height(&self) -> f64 {
         self.height
     }
 }
@@ -65,8 +64,9 @@ impl World {
         self.entities.push(e);
     }
 
-    pub fn update(&mut self, dt: f32) {
-        self.data.b2world.step(dt, 5, 5);
+    pub fn update(&mut self, dt: f64) {
+        //self.data.b2world.step(dt, 5, 5);
+        self.data.physics_world.update(dt);
 
         let data = &mut self.data;
         for e in &mut self.entities {

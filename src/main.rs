@@ -10,10 +10,15 @@ use piston_window::*;
 mod engine;
 mod render;
 mod interface;
+mod physics;
 
 fn main() {
     let window: PistonWindow = WindowSettings::new("dio", [800, 600])
-        .exit_on_esc(true).samples(4).vsync(true).build().unwrap();
+        .exit_on_esc(true)
+        .samples(4)
+        .vsync(true)
+        .build()
+        .unwrap();
 
     let mut world = Box::new(engine::world::World::new(engine::world::WorldData::new(14.0, 10.0)));
     let (cx, cy) = world.data.get_centre_pos();
@@ -23,7 +28,7 @@ fn main() {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
 
-        let player = Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 7.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
+        let player = Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 1.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
         world.push_entity(player.clone());
         world.set_player(Option::Some(player));
     }
@@ -85,7 +90,7 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
             _ => {},
         },
         Event::Update(UpdateArgs{dt}) => {
-            world.update(dt as f32);
+            world.update(dt);
         },
         _ => {},
     }
