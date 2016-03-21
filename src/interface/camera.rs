@@ -47,4 +47,13 @@ impl Camera {
         let (wx, wy) = self.pair_pixels_to_metres(x, y);
         (wx + self.x, wy + self.y)
     }
+
+    pub fn array_pos_to_screen(&self, screen_size: piston_window::Size, mut pos: [f64; 4]) -> [f64; 4] {
+        pos[0] = self.metres_to_pixels(pos[0] - self.x) + (screen_size.width / 2) as f64;
+        pos[1] = self.metres_to_pixels(pos[1] - self.y) + (screen_size.height / 2) as f64;
+        pos[2] = self.metres_to_pixels(pos[2]);
+        pos[3] = self.metres_to_pixels(pos[3]);
+
+        pos
+    }
 }

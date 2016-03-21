@@ -4,6 +4,7 @@ use piston_window::*;
 
 use engine::world::World;
 use interface::camera::Camera;
+use media;
 
 pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
     win.draw_2d(|c, g| {
@@ -17,6 +18,19 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
     for e in world.get_entities_ref() {
         e.borrow_mut().render(&world.data.physics_world, win, cam);
     }
+}
+
+// arrays are in [x, y, w, h] format
+pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::ImageHandle, target: [f64; 4], source: Option<[i32; 4]>) {
+    let image_bounds = Image {
+        color: None,
+        rectangle: Some(cam.array_pos_to_screen(win.draw_size(), target)),
+        source_rectangle: source,
+    };
+
+    win.draw_2d(|c, g| {
+        g.image(&image_bounds, image_tex.borrow_texture(), &c.draw_state, c.transform);
+    });
 }
 
 pub fn fill_rectangle(win: &PistonWindow,
