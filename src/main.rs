@@ -1,19 +1,39 @@
 #![allow(dead_code)]
 
+#[macro_use]
+extern crate lazy_static;
 extern crate piston_window;
+extern crate sdl2;
+extern crate sdl2_mixer;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use piston_window::*;
+use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, INIT_OGG, AUDIO_S16LSB};
 
 mod engine;
 mod render;
 mod interface;
 mod physics;
 mod media;
+mod audio;
 
 fn main() {
+    let sdl = sdl2::init().unwrap();
+    sdl.audio().unwrap();
+    //let mut timer = sdl.timer().unwrap();
+    sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
+                                          INIT_MODPLUG |
+                                          INIT_OGG).unwrap();
+    let frequency = 44100;
+    let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
+    let channels = 2; // Stereo
+    let chunk_size = 1024;
+    sdl2_mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
+
+    audio::init();
+
     let opengl = OpenGL::V2_1;
 
     let window: PistonWindow = WindowSettings::new("dio", [800, 600])
@@ -29,7 +49,6 @@ fn main() {
     let cam = interface::camera::Camera::new(cx, cy, 50.0);
 
     //let media_handle = media::MediaHandle::new(window.factory.clone());
-    //let im = media::image::ImageHandle::new(&media_handle, "stallman.png").unwrap();
 
     {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
