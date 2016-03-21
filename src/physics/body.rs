@@ -11,8 +11,12 @@ pub struct Collision {
 
 #[derive(Clone,Copy,PartialEq,Eq)]
 pub enum BodyType {
+    /// Static bodies cannot move. Applying forces/impulses to them will have no effect.
     Static,
+    /// Kinematic bodies can move, but they are not affected by forces.
+    /// The only way to change their motion is to manually alter the velocity.
     Kinematic,
+    /// Dynamic bodies are affected by forces.
     Dynamic,
 }
 
@@ -67,27 +71,29 @@ impl<T> Body<T> {
     pub fn update(&mut self, dt: f64) {
         let mass = self.mass();
 
-        let mut vel = self.vel;
+        if self.def.body_type == BodyType::Dynamic {
+            let mut vel = self.vel;
 
-        for force in &mut self.applied_forces {
-            // a = F/m
-            let a = force.mul(1.0 / mass);
-            // v = at
-            vel = vel + a.mul(dt);
+            for force in &mut self.applied_forces {
+                // a = F/m
+                let a = force.mul(1.0 / mass);
+                // v = at
+                vel = vel + a.mul(dt);
+            }
+
+            for impulse in &mut self.applied_impulses {
+                vel = vel + impulse.mul(1.0 / mass);
+            }
+
+            self.vel = vel;
         }
-
-        for impulse in &mut self.applied_impulses {
-            vel = vel + impulse.mul(1.0 / mass);
-        }
-
-        self.vel = vel;
 
         if self.def.body_type != BodyType::Static {
             self.pos = self.pos + self.vel.mul(dt);
         }
 
         self.applied_forces.clear();
-        self.applied_impulses.clear(); // you forgot to put this in you dummy
+        self.applied_impulses.clear();
     }
 
     pub fn apply_force(&mut self, force: Vec2) {
