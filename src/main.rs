@@ -28,7 +28,8 @@ fn main() {
     let (cx, cy) = world.data.get_centre_pos();
     let cam = interface::camera::Camera::new(cx, cy, 50.0);
 
-    let media_handle = media::MediaHandle::new(window.factory.clone());
+    //let media_handle = media::MediaHandle::new(window.factory.clone());
+    //let im = media::image::ImageHandle::new(&media_handle, "stallman.png").unwrap();
 
     {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);

@@ -1,20 +1,20 @@
-extern crate gfx_graphics;
 extern crate gfx_device_gl;
+extern crate piston_window;
 
 use std::path::PathBuf;
 
-use self::gfx_graphics::*;
+use self::piston_window::*;
 use self::gfx_device_gl::Resources;
 
 use media::MediaHandle;
 
-pub struct Image {
+pub struct ImageHandle {
     path: PathBuf,
     texture: Texture<Resources>,
 }
 
-impl Image {
-    pub fn new(handle: &MediaHandle, image_path: &str) -> Result<Image, String> {
+impl ImageHandle {
+    pub fn new(handle: &MediaHandle, image_path: &str) -> Result<ImageHandle, String> {
         let mut path = handle.base_path.clone();
         path.push(image_path);
 
@@ -23,9 +23,13 @@ impl Image {
                                           Flip::None,
                                           &TextureSettings::new()));
 
-        Ok(Image {
+        Ok(ImageHandle {
             path: path,
             texture: tex,
         })
+    }
+
+    pub fn borrow_texture(&self) -> &Texture<Resources> {
+        &self.texture
     }
 }
