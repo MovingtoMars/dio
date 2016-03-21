@@ -9,7 +9,11 @@ pub trait Shape {
     fn contains(&self, pos: Vec2, point: Vec2) -> bool;
     fn mass(&self, density: f64) -> f64;
     fn variant(&self) -> ShapeVariant;
-    fn collides_with(&self, self_pos: Vec2, other: &Shape, other_pos: Vec2) -> Option<body::Collision>;
+    fn collides_with(&self,
+                     self_pos: Vec2,
+                     other: &Shape,
+                     other_pos: Vec2)
+                     -> Option<body::Collision>;
 }
 
 pub enum ShapeVariant {
@@ -29,13 +33,17 @@ impl Rect {
 }
 
 impl Shape for Rect {
-    fn collides_with(&self, self_pos: Vec2, other: &Shape, other_pos: Vec2) -> Option<body::Collision> {
+    fn collides_with(&self,
+                     self_pos: Vec2,
+                     other: &Shape,
+                     other_pos: Vec2)
+                     -> Option<body::Collision> {
         match other.variant() {
             ShapeVariant::Rect(rect) => {
                 let (x1, y1, x2, y2) = self.bounds(self_pos);
                 let (cx, cy) = ((x1 + x2) / 2.0, (y1 + y2) / 2.0);
                 let (ox1, oy1, ox2, oy2) = rect.bounds(other_pos);
-                //let (cox1, cox2) = ((ox1 + ox2) / 2.0, (oy1 + oy2) / 2.0);
+                // let (cox1, cox2) = ((ox1 + ox2) / 2.0, (oy1 + oy2) / 2.0);
 
                 let collides = !(y2 < oy1 || y1 > oy2 || x1 > ox2 || x2 < ox1);
                 if !collides {
@@ -79,7 +87,7 @@ impl Shape for Rect {
                     normal_a: self_collision_normal,
                     normal_b: self_collision_normal.mul(-1.0),
                 });
-            },
+            }
         }
     }
 
@@ -88,7 +96,10 @@ impl Shape for Rect {
     }
 
     fn bounds(&self, pos: Vec2) -> (f64, f64, f64, f64) {
-        (pos.x - self.hw, pos.y - self.hh, pos.x + self.hw, pos.y + self.hh)
+        (pos.x - self.hw,
+         pos.y - self.hh,
+         pos.x + self.hw,
+         pos.y + self.hh)
     }
 
     fn mass(&self, density: f64) -> f64 {

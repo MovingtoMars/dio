@@ -18,7 +18,10 @@ impl Image {
         let mut path = handle.base_path.clone();
         path.push(image_path);
 
-        let tex = try!(Texture::from_path(&mut *handle.borrow_factory_mut(), path.as_path(), Flip::None, &TextureSettings::new()));
+        let tex = try!(Texture::from_path(&mut *handle.borrow_factory_mut(),
+                                          path.as_path(),
+                                          Flip::None,
+                                          &TextureSettings::new()));
 
         Ok(Image {
             path: path,
