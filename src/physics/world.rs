@@ -122,8 +122,8 @@ fn get_collision_impulses<T, U>(collision: body::Collision,
 
     let final_velocity = total_momentum.mul(1.0 / (b1.mass() + b2.mass()));
 
-    let deformation_impulse1 = final_velocity.mul(b1.mass()) - momentum1;
-    let deformation_impulse2 = final_velocity.mul(b2.mass()) - momentum2;
+    let deformation_impulse1 = (final_velocity.mul(b1.mass()) - momentum1).projection_onto(collision.normal_a);
+    let deformation_impulse2 = (final_velocity.mul(b2.mass()) - momentum2).projection_onto(collision.normal_a);
     let restoration_impulse1 = deformation_impulse1.mul(collision_restitution);
     let restoration_impulse2 = deformation_impulse2.mul(collision_restitution);
 
@@ -134,33 +134,24 @@ fn get_collision_impulses<T, U>(collision: body::Collision,
 fn apply_collision_position_correction<T, U>(collision: body::Collision,
                                              b1: &mut Body<T>,
                                              b2: &mut Body<U>) {
-    let (x1, y1, x2, y2) = b1.borrow_shape().bounds(b1.pos);
+    let (x1, y1, x2, y2) = b1.borrow_shape().bounds(b1.pos); // we are restricted to Rect shapes
     let (x3, y3, x4, y4) = b2.borrow_shape().bounds(b2.pos);
     let _ = (x1, x2, x3, x4, y1, y2, y3, y4);
-
-    if collision.normal_a.x == 0.0 {
+    let center_point = collision.point_a;
+    let correction_vector = collision.normal_a;
+    let penetration_vector = center_point - collision.corner_a;
+    let displacement = correction_vector.scale_to(penetration_vector);
         if !b1.is_static() && !b2.is_static() {
-            b1.pos.y = collision.point_a.y;
-            b2.pos.y = collision.point_a.y;
+            b1.pos = b1.pos + displacement;
+            b2.pos = b2.pos - displacement;
         } else {
             if b2.is_static() && !b1.is_static() {
-                if collision.normal_a.y > 0.0 {
-                    b1.pos.y = b1.pos.y - 2.0 * (y2 - collision.point_a.y);
-                } else if collision.normal_a.y < 0.0 {
-                    b1.pos.y = b1.pos.y - 2.0 * (y1 - collision.point_a.y);
-                }
+                b1.pos = b1.pos + displacement.mul(2.0);
             }
             if b1.is_static() && !b2.is_static() {
-                if collision.normal_a.y > 0.0 {
-                    b2.pos.y = b2.pos.y - 2.0 * (y4 - collision.point_a.y);
-                } else if collision.normal_a.y < 0.0 {
-                    b2.pos.y = b2.pos.y - 2.0 * (y3 - collision.point_a.y);
-                }
+                b2.pos = b2.pos - displacement.mul(2.0);
             }
         }
-    } else {
-        panic!("unimplemented");
-    }
 }
 
 fn solve_collision<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) {
@@ -205,6 +196,42 @@ impl Vec2 {
 
     pub fn coords(self) -> (f64, f64) {
         (self.x, self.y)
+    }
+
+    pub fn abs(self) -> Vec2 {
+        Vec2 {
+            x: self.x.abs(),
+            y: self.y.abs(),
+        }
+    }
+
+    pub fn align_quadrant(self, align: Vec2) ->  Vec2 {
+        let reduced_x = align.x/align.x.abs();
+        let reduced_y = align.y/align.y.abs();
+        Vec2 {
+            x: self.x*reduced_x,
+            y: self.y*reduced_y,
+        }
+    }
+
+    pub fn unit(self) -> Vec2 {
+        self.mul(1.0/self.norm())
+    }
+
+    pub fn scale_to(self, vector: Vec2) -> Vec2 {
+        let aligned_vector = vector.align_quadrant(self);
+        let scale_x = aligned_vector.x/self.x;
+        let scale_y = aligned_vector.y/self.y;
+        let scale = scale_x.min(scale_y);
+        self.mul(scale)
+    }
+
+    pub fn projection_onto(self, vector: Vec2) -> Vec2 {
+        vector.mul(self.dot(vector)/vector.norm())
+    }
+
+    pub fn orthogonalise(self, vector: Vec2) -> Vec2 {
+        self - self.projection_onto(vector)
     }
 }
 
