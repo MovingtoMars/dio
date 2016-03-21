@@ -30,11 +30,10 @@ pub struct World<T> {
 
 impl<T> World<T> {
     pub fn new(gravity: Vec2) -> World<T> {
-        let sheep: fn(body::Collision, &mut Body<T>, &mut Body<T>) = sheep_callback; // yeah i fiddled with this thing because i don't know where to call the set_collision_callback function
         World {
             gravity: gravity,
             bodies: Vec::new(),
-            collision_callback: Option::Some(sheep),
+            collision_callback: None,
         }
     }
 
@@ -69,7 +68,7 @@ impl<T> World<T> {
         if self.bodies.len() > 1 {
             for i in 0..(self.bodies.len() - 1) {
                 use std::borrow::BorrowMut;
-                let (mut a, mut b) = self.bodies.split_at_mut(i + 1);
+                let (mut a, b) = self.bodies.split_at_mut(i + 1);
                 let alen = a.len();
 
                 let h1 = &mut a[alen - 1];
@@ -80,6 +79,8 @@ impl<T> World<T> {
                     let collision = check_body_collision(&mut *b1, &mut *b2);
                     match collision {
                         Some(c) => {
+                            solve_collision(c, &mut *b1, &mut *b2);
+
                             match self.collision_callback {
                                 Some(func) => {
                                     func(c, &mut *b1, &mut *b2);
@@ -95,63 +96,78 @@ impl<T> World<T> {
     }
 }
 
-// sheep testing
-fn get_impulses<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) -> (Vec2, Vec2) {
+fn get_collision_impulses<T, U>(collision: body::Collision,
+                                b1: &mut Body<T>,
+                                b2: &mut Body<U>)
+                                -> (Vec2, Vec2) {
+    let _ = collision;
+
     let collision_restitution = (b1.restitution() + b2.restitution()) / 2.0;
+
     let mut momentum1 = b1.momentum();
     let mut momentum2 = b2.momentum();
+
     let total_momentum: Vec2;
-    if (b1.def.body_type != physics::body::BodyType::Static &&
-        b2.def.body_type != physics::body::BodyType::Static) {
+    if !b1.is_static() && !b2.is_static() {
         total_momentum = momentum1 + momentum2;
     } else {
         total_momentum = Vec2::new(0.0, 0.0);
-        if (b1.def.body_type == physics::body::BodyType::Static) {
+        if b1.is_static() {
             momentum1 = Vec2::new(0.0, 0.0);
         }
-        if (b2.def.body_type == physics::body::BodyType::Static) {
+        if b2.is_static() {
             momentum2 = Vec2::new(0.0, 0.0);
         }
     }
+
     let final_velocity = total_momentum.mul(1.0 / (b1.mass() + b2.mass()));
+
     let deformation_impulse1 = final_velocity.mul(b1.mass()) - momentum1;
     let deformation_impulse2 = final_velocity.mul(b2.mass()) - momentum2;
-    let restoration_impulse1: Vec2 = deformation_impulse1.mul(collision_restitution);
-    let restoration_impulse2: Vec2 = deformation_impulse2.mul(collision_restitution);
+    let restoration_impulse1 = deformation_impulse1.mul(collision_restitution);
+    let restoration_impulse2 = deformation_impulse2.mul(collision_restitution);
+
     (deformation_impulse1 + restoration_impulse1,
      deformation_impulse2 + restoration_impulse2)
 }
-fn sheep_correction<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) {
+
+fn apply_collision_position_correction<T, U>(collision: body::Collision,
+                                             b1: &mut Body<T>,
+                                             b2: &mut Body<U>) {
     let (x1, y1, x2, y2) = b1.borrow_shape().bounds(b1.pos);
     let (x3, y3, x4, y4) = b2.borrow_shape().bounds(b2.pos);
-    if sheep.normal_a.x == 0.0 {
-        if (b1.def.body_type != physics::body::BodyType::Static &&
-            b2.def.body_type != physics::body::BodyType::Static) {
-            b1.pos.y = sheep.point_a.y;
-            b2.pos.y = sheep.point_a.y;
+    let _ = (x1, x2, x3, x4, y1, y2, y3, y4);
+
+    if collision.normal_a.x == 0.0 {
+        if !b1.is_static() && !b2.is_static() {
+            b1.pos.y = collision.point_a.y;
+            b2.pos.y = collision.point_a.y;
         } else {
-            if (b2.def.body_type == physics::body::BodyType::Static &&
-                b1.def.body_type != physics::body::BodyType::Static) {
-                if sheep.normal_a.y > 0.0 {
-                    b1.pos.y = b1.pos.y - 2.0 * (y2 - sheep.point_a.y);
-                } else if sheep.normal_a.y < 0.0 {
-                    b1.pos.y = b1.pos.y - 2.0 * (y1 - sheep.point_a.y);
+            if b2.is_static() && !b1.is_static() {
+                if collision.normal_a.y > 0.0 {
+                    b1.pos.y = b1.pos.y - 2.0 * (y2 - collision.point_a.y);
+                } else if collision.normal_a.y < 0.0 {
+                    b1.pos.y = b1.pos.y - 2.0 * (y1 - collision.point_a.y);
                 }
             }
-            if (b1.def.body_type == physics::body::BodyType::Static &&
-                b2.def.body_type != physics::body::BodyType::Static) {
-                if sheep.normal_a.y > 0.0 {
-                    b2.pos.y = b2.pos.y - 2.0 * (y4 - sheep.point_a.y);
-                } else if sheep.normal_a.y < 0.0 {
-                    b2.pos.y = b2.pos.y - 2.0 * (y3 - sheep.point_a.y);
+            if b1.is_static() && !b2.is_static() {
+                if collision.normal_a.y > 0.0 {
+                    b2.pos.y = b2.pos.y - 2.0 * (y4 - collision.point_a.y);
+                } else if collision.normal_a.y < 0.0 {
+                    b2.pos.y = b2.pos.y - 2.0 * (y3 - collision.point_a.y);
                 }
             }
         }
+    } else {
+        panic!("unimplemented");
     }
 }
-fn sheep_callback<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) {
-    let (impulse1, impulse2) = get_impulses(sheep, b1, b2);
-    sheep_correction(sheep, b1, b2);
+
+fn solve_collision<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) {
+    let (impulse1, impulse2) = get_collision_impulses(collision, b1, b2);
+
+    apply_collision_position_correction(collision, b1, b2);
+
     b1.apply_impulse(impulse1);
     b2.apply_impulse(impulse2);
 }

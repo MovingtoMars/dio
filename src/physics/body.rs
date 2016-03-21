@@ -1,5 +1,5 @@
 use physics::shape;
-use physics::world::{self, Vec2};
+use physics::world::Vec2;
 
 #[derive(Clone,Copy)]
 pub struct Collision {
@@ -118,5 +118,17 @@ impl<T> Body<T> {
 
     pub fn restitution(&self) -> f64 {
         self.def.restitution
+    }
+
+    pub fn is_static(&self) -> bool {
+        self.def.body_type == BodyType::Static
+    }
+
+    pub fn is_kinematic(&self) -> bool {
+        self.def.body_type == BodyType::Kinematic
+    }
+
+    pub fn is_dynamic(&self) -> bool {
+        self.def.body_type == BodyType::Dynamic
     }
 }
