@@ -19,7 +19,6 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
     }
 }
 
-
 pub fn fill_rectangle(win: &PistonWindow,
                       cam: &Camera,
                       colour: [f32; 4],
