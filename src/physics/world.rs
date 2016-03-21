@@ -102,7 +102,12 @@ fn get_collision_impulses<T, U>(collision: body::Collision,
                                 -> (Vec2, Vec2) {
     let _ = collision;
 
-    let collision_restitution = (b1.restitution() + b2.restitution()) / 2.0;
+    let relative_speed = (b1.vel - b2.vel).norm();
+
+    let mut collision_restitution = (b1.restitution() + b2.restitution()) / 2.0;
+    if relative_speed<VELOCITY_THRESHOLD {
+        collision_restitution = 0.0;
+    }
 
     let mut momentum1 = b1.momentum();
     let mut momentum2 = b2.momentum();
