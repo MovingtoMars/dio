@@ -117,8 +117,34 @@ fn get_impulses<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) -
     let restoration_impulse2: Vec2 = deformation_impulse2.mul(collision_restitution);
     (deformation_impulse1+restoration_impulse1, deformation_impulse2+restoration_impulse2)
 }
+fn sheep_correction<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) {
+    let (x1, y1, x2, y2) = b1.borrow_shape().bounds(b1.pos);
+    let (x3, y3, x4, y4) = b2.borrow_shape().bounds(b2.pos);
+    if sheep.normal_a.x == 0.0 {
+        if (b1.def.body_type != physics::body::BodyType::Static && b2.def.body_type != physics::body::BodyType::Static) {
+            b1.pos.y = sheep.point_a.y;
+            b2.pos.y = sheep.point_a.y;
+        } else {
+            if (b2.def.body_type == physics::body::BodyType::Static&&b1.def.body_type != physics::body::BodyType::Static) {
+                if sheep.normal_a.y>0.0{
+                    b1.pos.y = b1.pos.y-2.0*(y2-sheep.point_a.y);
+                } else if sheep.normal_a.y<0.0{
+                    b1.pos.y = b1.pos.y-2.0*(y1-sheep.point_a.y);
+                }
+            }
+            if (b1.def.body_type == physics::body::BodyType::Static&&b2.def.body_type != physics::body::BodyType::Static) {
+                if sheep.normal_a.y>0.0{
+                    b2.pos.y = b2.pos.y-2.0*(y4-sheep.point_a.y);
+                } else if sheep.normal_a.y<0.0{
+                    b2.pos.y = b2.pos.y-2.0*(y3-sheep.point_a.y);
+                }
+            }
+        }
+    }
+}
 fn sheep_callback<T>(sheep: body::Collision, b1: &mut Body<T>, b2: &mut Body<T>) {
     let (impulse1, impulse2) = get_impulses(sheep, b1, b2);
+    sheep_correction(sheep, b1, b2);
     b1.apply_impulse(impulse1);
     b2.apply_impulse(impulse2);
 }
