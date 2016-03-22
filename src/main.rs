@@ -16,11 +16,8 @@ mod engine;
 mod render;
 mod interface;
 mod physics;
-<<<<<<< HEAD
 mod media;
 mod audio;
-=======
->>>>>>> master
 
 fn main() {
     let sdl = sdl2::init().unwrap();
