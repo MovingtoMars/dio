@@ -75,15 +75,7 @@ impl<T> Body<T> {
         let mass = self.mass();
 
         if self.def.body_type == BodyType::Dynamic {
-            for impulse in &mut self.applied_impulses {
-                self.applied_forces.push(impulse.mul(1.0 / dt));
-            }
-
-            let mut net_force = Vec2::new(0.0, 0.0);
-
-            for force in &mut self.applied_forces {
-                net_force = net_force + *force;
-            }
+            let mut net_force = self.current_net_force(dt);
 
             let a = net_force.mul(1.0 / mass);
             self.vel = self.vel + a.mul(dt);
@@ -97,6 +89,20 @@ impl<T> Body<T> {
 
         self.applied_forces.clear();
         self.applied_impulses.clear();
+    }
+
+    pub fn current_net_force(&mut self, dt: f64) -> Vec2 {
+        let mut net_force = Vec2::new(0.0, 0.0);
+
+        for force in &mut self.applied_forces {
+            net_force = net_force + *force;
+        }
+
+        for impulse in &mut self.applied_impulses {
+            net_force = net_force + impulse.mul(1.0 / dt);
+        }
+
+        net_force
     }
 
     pub fn prev_net_force(&self) -> Vec2 {
