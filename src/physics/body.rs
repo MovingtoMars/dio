@@ -7,8 +7,6 @@ pub struct Collision {
     pub point_b: Vec2,
     pub normal_a: Vec2,
     pub normal_b: Vec2,
-    pub corner_a: Vec2,
-    pub corner_b: Vec2,
 }
 
 #[derive(Clone,Copy,PartialEq,Eq)]

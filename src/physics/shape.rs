@@ -47,9 +47,6 @@ impl Shape for Rect {
                 let ix2 = x2.min(ox2);
                 let iy2 = y2.min(oy2);
 
-                let corner_a = Vec2::new(ix1, iy1);
-                let corner_b = Vec2::new(ix2, iy2);
-
                 let collision_point = Vec2::new((ix1 + ix2) / 2.0, (iy1 + iy2) / 2.0);
 
                 let self_collision_normal = if ix2 - ix1 > iy2 - iy1 {
@@ -81,8 +78,6 @@ impl Shape for Rect {
                     point_b: collision_point,
                     normal_a: self_collision_normal,
                     normal_b: self_collision_normal.mul(-1.0),
-                    corner_a: corner_a,
-                    corner_b: corner_b,
                 });
             },
         }
@@ -120,7 +115,7 @@ impl Shape for Rect {
             let inter = lines_intersect(origin, dir, borigin, bdir);
             match inter {
                 Option::Some(v) => {
-                    let norm = v.norm();
+                    let norm = (origin-v).norm();
                     if norm < lowest_norm {
                         lowest_norm = norm;
                         closest_inter = inter;
@@ -146,6 +141,8 @@ pub fn lines_intersect(p1: Vec2, d1: Vec2, p2: Vec2, d2: Vec2) -> Option<Vec2> {
     let t = (1.0 / d) * -(-(x00 - x10) * y11 + (y00 - y10) * x11);
 
     if t >= 0.0 && t <= 1.0 {
+        //println!("{}", t.to_string());
+        //println!("{:?}", (x00, y00, x01, y01, x10, y10, x11, y11));
         Option::Some(p1 + d1.mul(t))
     } else {
         Option::None

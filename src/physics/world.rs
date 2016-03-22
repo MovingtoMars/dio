@@ -1,4 +1,4 @@
-
+use std::f64;
 use std::fmt;
 use std::ops;
 use std::cell::{RefCell, RefMut, Ref};
@@ -142,10 +142,18 @@ fn apply_collision_position_correction<T, U>(collision: body::Collision,
     let (x1, y1, x2, y2) = b1.borrow_shape().bounds(b1.pos); // we are restricted to Rect shapes
     let (x3, y3, x4, y4) = b2.borrow_shape().bounds(b2.pos);
     let _ = (x1, x2, x3, x4, y1, y2, y3, y4);
-    let center_point = collision.point_a;
+    let centre_point = collision.point_a; // centre of collision point
     let correction_vector = collision.normal_a;
-    let penetration_vector = center_point - collision.corner_a;
-    let displacement = correction_vector.scale_to(penetration_vector);
+    let penetration_vector = b1.borrow_shape().cast_ray(b1.pos, centre_point, correction_vector.mul(-5.0));
+    let displacement: Vec2; // distance that the bodies will move after correction
+    match penetration_vector {
+        Some(thing) => {
+            println!("{:?}", ((centre_point-thing).x, (centre_point-thing).y));
+            displacement = correction_vector.scale_to(centre_point-thing);
+            println!("{:?}", (displacement.x, displacement.y));
+        },
+        None => {displacement = Vec2::new(0.0, 0.0);}
+    }
         if !b1.is_static() && !b2.is_static() {
             b1.pos = b1.pos + displacement;
             b2.pos = b2.pos - displacement;
@@ -160,10 +168,11 @@ fn apply_collision_position_correction<T, U>(collision: body::Collision,
 }
 
 fn solve_collision<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) {
+if b1.is_static() && b2.is_static() {
+    return;
+}
     let (impulse1, impulse2) = get_collision_impulses(collision, b1, b2);
-
     apply_collision_position_correction(collision, b1, b2);
-
     b1.apply_impulse(impulse1);
     b2.apply_impulse(impulse2);
 }
@@ -227,12 +236,12 @@ impl Vec2 {
         let aligned_vector = vector.align_quadrant(self);
         let scale_x = aligned_vector.x/self.x;
         let scale_y = aligned_vector.y/self.y;
-        let scale = scale_x.min(scale_y);
+        let scale = scale_x.abs().min(scale_y.abs());
         self.mul(scale)
     }
 
     pub fn projection_onto(self, vector: Vec2) -> Vec2 {
-        vector.mul(self.dot(vector)/vector.norm())
+        vector.mul(self.dot(vector)/vector.dot(vector))
     }
 
     pub fn orthogonalise(self, vector: Vec2) -> Vec2 {
