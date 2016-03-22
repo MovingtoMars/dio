@@ -64,17 +64,6 @@ fn main() {
             )
         );
         world.push_entity(player.clone());
-        let block = Rc::new(
-            RefCell::new(
-                Box::new(
-                    engine::entity::DynamicBlock::new(&mut world.data, 5.5, 7.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
-        let block2 = Rc::new(
-            RefCell::new(
-                Box::new(
-                    engine::entity::DynamicBlock::new(&mut world.data, 5.5, 8.5, 0.5, 0.5))
-                    as Box<engine::entity::Entity>));
-        world.push_entity(block.clone());
-        world.push_entity(block2.clone());
         world.set_player(Option::Some(player));
     }
 
