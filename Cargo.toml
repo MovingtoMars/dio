@@ -6,3 +6,6 @@ authors = ["MovingtoMars <liam@bumblebee.net.nz>"]
 [dependencies]
 piston_window = "0.35.0"
 gfx_device_gl = "0.8.2"
+sdl2_mixer = "0.12.0"
+sdl2 = "*"
+lazy_static = "*"
