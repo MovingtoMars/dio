@@ -32,7 +32,7 @@ impl BodyDef {
         BodyDef {
             density: 1.0,
             body_type: body_type,
-            restitution: 1.0, // was 0.0 before i fiddled with it
+            restitution: 0.5, // was 0.0 before i fiddled with it
         }
     }
 }
