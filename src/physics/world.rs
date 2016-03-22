@@ -1,4 +1,3 @@
-use std::f64;
 use std::fmt;
 use std::ops;
 use std::cell::{RefCell, RefMut, Ref};

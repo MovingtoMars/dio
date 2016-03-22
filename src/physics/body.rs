@@ -49,6 +49,8 @@ pub struct Body<T> {
 
     applied_forces: Vec<Vec2>,
     applied_impulses: Vec<Vec2>,
+
+    prev_net_force: Vec2, // TODO: when sleeping is implemented, make sure to set this to 0
 }
 
 impl<T> Body<T> {
@@ -61,6 +63,7 @@ impl<T> Body<T> {
             pos: Vec2::default(),
             applied_forces: Vec::new(),
             applied_impulses: Vec::new(),
+            prev_net_force: Vec2::new(0.0, 0.0),
         }
     }
 
@@ -72,20 +75,20 @@ impl<T> Body<T> {
         let mass = self.mass();
 
         if self.def.body_type == BodyType::Dynamic {
-            let mut vel = self.vel;
+            for impulse in &mut self.applied_impulses {
+                self.applied_forces.push(impulse.mul(1.0 / dt));
+            }
+
+            let mut net_force = Vec2::new(0.0, 0.0);
 
             for force in &mut self.applied_forces {
-                // a = F/m
-                let a = force.mul(1.0 / mass);
-                // v = at
-                vel = vel + a.mul(dt);
+                net_force = net_force + *force;
             }
 
-            for impulse in &mut self.applied_impulses {
-                vel = vel + impulse.mul(1.0 / mass);
-            }
+            let a = net_force.mul(1.0 / mass);
+            self.vel = self.vel + a.mul(dt);
 
-            self.vel = vel;
+            self.prev_net_force = net_force;
         }
 
         if self.def.body_type != BodyType::Static {
@@ -94,6 +97,10 @@ impl<T> Body<T> {
 
         self.applied_forces.clear();
         self.applied_impulses.clear();
+    }
+
+    pub fn prev_net_force(&self) -> Vec2 {
+        self.prev_net_force
     }
 
     pub fn apply_force(&mut self, force: Vec2) {
