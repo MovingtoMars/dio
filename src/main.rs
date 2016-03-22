@@ -16,8 +16,11 @@ mod engine;
 mod render;
 mod interface;
 mod physics;
+<<<<<<< HEAD
 mod media;
 mod audio;
+=======
+>>>>>>> master
 
 fn main() {
     let sdl = sdl2::init().unwrap();
@@ -52,7 +55,9 @@ fn main() {
 
     {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
+        let gnd2 = engine::entity::Ground::new(&mut world.data, 0.5, 5.0, 0.5, 5.0);
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
+        world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
         let player = Rc::new(
             RefCell::new(
