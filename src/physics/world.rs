@@ -2,6 +2,7 @@ use std::fmt;
 use std::ops;
 use std::cell::{RefCell, RefMut, Ref};
 use std::rc::Rc;
+use std::f64;
 
 use physics;
 use physics::body::{self, Body};
@@ -165,9 +166,9 @@ fn apply_collision_position_correction<T, U>(collision: body::Collision,
 }
 
 fn solve_collision<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) {
-if b1.is_static() && b2.is_static() {
-    return;
-}
+    if b1.is_static() && b2.is_static() {
+        return;
+    }
     let (impulse1, impulse2) = get_collision_impulses(collision, b1, b2);
     apply_collision_position_correction(collision, b1, b2);
     let friction = (b1.def.friction+b2.def.friction)/2.0;
@@ -262,6 +263,10 @@ impl Vec2 {
             x: self.y*-1.0,
             y: self.x,
         }.unit()
+    }
+
+    pub fn angle_with(self, other: Vec2) -> f64 {
+        (self.dot(other) / (self.norm() * other.norm())).acos()
     }
 }
 
