@@ -34,7 +34,7 @@ impl BodyDef {
             density: 1.0,
             body_type: body_type,
             restitution: 0.5,
-            friction: 0.2,
+            friction: 0.6,
         }
     }
 }
@@ -84,7 +84,7 @@ impl<T> Body<T> {
             for f in &mut self.applied_friction {
                 let component_momentum = required_impulse.orthogonalise(*f);
                 let unit_component_momentum = component_momentum.unit();
-                let resultant_norm = f.norm().min(required_impulse.norm());
+                let resultant_norm = f.mul(1.0 / dt).norm().min(required_impulse.norm());
                 net_force = net_force - unit_component_momentum.mul(resultant_norm);
             }
 
@@ -100,6 +100,7 @@ impl<T> Body<T> {
 
         self.applied_forces.clear();
         self.applied_impulses.clear();
+        self.applied_friction.clear();
     }
 
     pub fn current_net_force(&mut self, dt: f64) -> Vec2 {
