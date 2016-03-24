@@ -25,6 +25,7 @@ pub struct BodyDef {
     pub density: f64,
     pub body_type: BodyType,
     pub restitution: f64,
+    pub friction: f64,
 }
 
 impl BodyDef {
@@ -32,7 +33,8 @@ impl BodyDef {
         BodyDef {
             density: 1.0,
             body_type: body_type,
-            restitution: 0.5, // was 0.0 before i fiddled with it
+            restitution: 0.5,
+            friction: 0.2,
         }
     }
 }
@@ -49,6 +51,7 @@ pub struct Body<T> {
 
     applied_forces: Vec<Vec2>,
     applied_impulses: Vec<Vec2>,
+    applied_friction: Vec<Vec2>,
 
     prev_net_force: Vec2, // TODO: when sleeping is implemented, make sure to set this to 0
 }
@@ -63,6 +66,7 @@ impl<T> Body<T> {
             pos: Vec2::default(),
             applied_forces: Vec::new(),
             applied_impulses: Vec::new(),
+            applied_friction: Vec::new(),
             prev_net_force: Vec2::new(0.0, 0.0),
         }
     }
@@ -76,6 +80,13 @@ impl<T> Body<T> {
 
         if self.def.body_type == BodyType::Dynamic {
             let mut net_force = self.current_net_force(dt);
+            let required_impulse = self.momentum();
+            for f in &mut self.applied_friction {
+                let component_momentum = required_impulse.orthogonalise(*f);
+                let unit_component_momentum = component_momentum.unit();
+                let resultant_norm = f.norm().min(required_impulse.norm());
+                net_force = net_force - unit_component_momentum.mul(resultant_norm);
+            }
 
             let a = net_force.mul(1.0 / mass);
             self.vel = self.vel + a.mul(dt);
@@ -115,6 +126,10 @@ impl<T> Body<T> {
 
     pub fn apply_impulse(&mut self, impulse: Vec2) {
         self.applied_impulses.push(impulse);
+    }
+
+    pub fn apply_friction(&mut self, friction: Vec2) {
+        self.applied_friction.push(friction);
     }
 
     pub fn momentum(&self) -> Vec2 {

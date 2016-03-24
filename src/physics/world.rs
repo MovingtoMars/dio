@@ -147,9 +147,7 @@ fn apply_collision_position_correction<T, U>(collision: body::Collision,
     let displacement: Vec2; // distance that the bodies will move after correction
     match penetration_vector {
         Some(thing) => {
-            println!("{:?}", ((centre_point-thing).x, (centre_point-thing).y));
             displacement = correction_vector.scale_to(centre_point-thing);
-            println!("{:?}", (displacement.x, displacement.y));
         },
         None => {displacement = Vec2::new(0.0, 0.0);}
     }
@@ -172,8 +170,12 @@ if b1.is_static() && b2.is_static() {
 }
     let (impulse1, impulse2) = get_collision_impulses(collision, b1, b2);
     apply_collision_position_correction(collision, b1, b2);
+    let friction = (b1.def.friction+b2.def.friction)/2.0;
+    let (friction1, friction2) = (impulse1.mul(friction), impulse2.mul(friction));
     b1.apply_impulse(impulse1);
+    b1.apply_friction(friction1);
     b2.apply_impulse(impulse2);
+    b2.apply_friction(friction2);
 }
 
 /// This function is called every time World updates. Note that this function will be called a maximum of one time for every possible pair of bodies, on each iteration.
@@ -228,7 +230,11 @@ impl Vec2 {
     }
 
     pub fn unit(self) -> Vec2 {
+        if self.norm()==0.0 {
+            Vec2::new(0.0, 0.0)
+        } else {
         self.mul(1.0/self.norm())
+        }
     }
 
     pub fn scale_to(self, vector: Vec2) -> Vec2 {
@@ -240,11 +246,22 @@ impl Vec2 {
     }
 
     pub fn projection_onto(self, vector: Vec2) -> Vec2 {
+        if vector.x == 0.0 && vector.y == 0.0 {
+            Vec2::new(0.0, 0.0)
+        }else {
         vector.mul(self.dot(vector)/vector.dot(vector))
+        }
     }
 
     pub fn orthogonalise(self, vector: Vec2) -> Vec2 {
         self - self.projection_onto(vector)
+    }
+
+    pub fn get_unit_orthogonal(self) -> Vec2 {
+        Vec2 {
+            x: self.y*-1.0,
+            y: self.x,
+        }.unit()
     }
 }
 

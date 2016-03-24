@@ -54,7 +54,7 @@ fn main() {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
         let gnd2 = engine::entity::Ground::new(&mut world.data, 0.5, 5.0, 0.5, 5.0);
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
-        world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
+        //world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
         let player = Rc::new(
             RefCell::new(
@@ -67,13 +67,13 @@ fn main() {
         let block = Rc::new(
             RefCell::new(
                 Box::new(
-                    engine::entity::DynamicBlock::new(&mut world.data, 5.5, 7.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
+                    engine::entity::DynamicBlock::new(&mut world.data, 5.0, 7.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
         let block2 = Rc::new(
             RefCell::new(
                 Box::new(
                     engine::entity::DynamicBlock::new(&mut world.data, 5.5, 8.5, 0.5, 0.5))
                     as Box<engine::entity::Entity>));
-        world.push_entity(block.clone());
+        //world.push_entity(block.clone());
         world.push_entity(block2.clone());
         world.set_player(Option::Some(player));
     }
