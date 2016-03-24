@@ -58,7 +58,8 @@ impl<T> World<T> {
         for body in &mut self.bodies {
             let mut body = body.body.borrow_mut();
             if body.body_def().body_type == physics::body::BodyType::Dynamic {
-                body.apply_force(self.gravity);
+                let mass = body.mass();
+                body.apply_force(self.gravity.mul(mass));
             }
             body.update(dt);
         }
