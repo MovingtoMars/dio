@@ -160,7 +160,7 @@ impl Player {
 }
 
 const USAIN_BOLT_MAX_SPEED: f64 = 12.4;
-const PLAYER_MAX_SPEED: f64 = USAIN_BOLT_MAX_SPEED;
+const PLAYER_MAX_SPEED: f64 = USAIN_BOLT_MAX_SPEED * 0.5;
 const PLAYER_ACCELERATION: f64 = 1.5;
 
 impl Entity for Player {
