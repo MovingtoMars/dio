@@ -17,17 +17,10 @@ use render;
 
 pub trait Entity {
     fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>>;
-    fn get_centre(&self,
-                  physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                  -> (f64, f64);
-    fn get_bounding_box(&self,
-                        physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                        -> (f64, f64, f64, f64);
+    fn get_centre(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64);
+    fn get_bounding_box(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64, f64, f64);
 
-    fn render(&self,
-              physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>,
-              win: &PistonWindow,
-              cam: &Camera);
+    fn render(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>, win: &PistonWindow, cam: &Camera);
     fn update(&mut self, world: &mut WorldData, dt: f64);
 
     fn as_player(&mut self) -> Option<&mut Player> {
@@ -60,10 +53,7 @@ impl Ground {
 }
 
 impl Entity for Ground {
-    fn render(&self,
-              physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>,
-              win: &PistonWindow,
-              cam: &Camera) {
+    fn render(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(physics_world);
         render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h);
     }
@@ -72,16 +62,12 @@ impl Entity for Ground {
         &mut self.body_handle
     }
 
-    fn get_centre(&self,
-                  physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                  -> (f64, f64) {
+    fn get_centre(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64) {
         let trans = physics_world.get_body(&self.body_handle).pos;
         (trans.x, trans.y)
     }
 
-    fn get_bounding_box(&self,
-                        physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                        -> (f64, f64, f64, f64) {
+    fn get_bounding_box(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64, f64, f64) {
         let (cx, cy) = self.get_centre(physics_world);
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
@@ -113,33 +99,26 @@ impl DynamicBlock {
 }
 
 impl Entity for DynamicBlock {
-fn render(&self,
-          physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>,
-          win: &PistonWindow,
-          cam: &Camera) {
-    let (x, y, w, h) = self.get_bounding_box(physics_world);
-    render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h);
-}
-fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>> {
-    &mut self.body_handle
-}
+    fn render(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>, win: &PistonWindow, cam: &Camera) {
+        let (x, y, w, h) = self.get_bounding_box(physics_world);
+        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h);
+    }
 
-fn get_centre(&self,
-              physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-              -> (f64, f64) {
-    let trans = physics_world.get_body(&self.body_handle).pos;
-    (trans.x, trans.y)
-}
+    fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>> {
+        &mut self.body_handle
+    }
 
-fn get_bounding_box(&self,
-                    physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                    -> (f64, f64, f64, f64) {
-    let (cx, cy) = self.get_centre(physics_world);
-    (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
-}
-fn update(&mut self, world_data: &mut WorldData, _: f64) {
+    fn get_centre(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64) {
+        let trans = physics_world.get_body(&self.body_handle).pos;
+        (trans.x, trans.y)
+    }
 
-}
+    fn get_bounding_box(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64, f64, f64) {
+        let (cx, cy) = self.get_centre(physics_world);
+        (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
+    }
+
+    fn update(&mut self, world_data: &mut WorldData, _: f64) {}
 }
 
 pub struct Player {
@@ -183,10 +162,7 @@ const PLAYER_MAX_SPEED: f64 = USAIN_BOLT_MAX_SPEED;
 const PLAYER_ACCELERATION: f64 = 1.5;
 
 impl Entity for Player {
-    fn render(&self,
-              physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>,
-              win: &PistonWindow,
-              cam: &Camera) {
+    fn render(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(physics_world);
         render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h);
     }
@@ -195,16 +171,12 @@ impl Entity for Player {
         &mut self.body_handle
     }
 
-    fn get_centre(&self,
-                  physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                  -> (f64, f64) {
+    fn get_centre(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64) {
         let trans = physics_world.get_body(&self.body_handle).pos;
         (trans.x, trans.y)
     }
 
-    fn get_bounding_box(&self,
-                        physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>)
-                        -> (f64, f64, f64, f64) {
+    fn get_bounding_box(&self, physics_world: &physics::world::World<Rc<RefCell<Box<Entity>>>>) -> (f64, f64, f64, f64) {
         let (cx, cy) = self.get_centre(physics_world);
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }

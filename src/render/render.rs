@@ -29,17 +29,14 @@ pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::
     };
 
     win.draw_2d(|c, g| {
-        g.image(&image_bounds, image_tex.borrow_texture(), &c.draw_state, c.transform);
+        g.image(&image_bounds,
+                image_tex.borrow_texture(),
+                &c.draw_state,
+                c.transform);
     });
 }
 
-pub fn fill_rectangle(win: &PistonWindow,
-                      cam: &Camera,
-                      colour: [f32; 4],
-                      x: f64,
-                      y: f64,
-                      w: f64,
-                      h: f64) {
+pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f64, y: f64, w: f64, h: f64) {
     win.draw_2d(|c, g| {
         let (zx, zy) = cam.pos_to_screen(win.draw_size(), x, y);
         let (w, h) = cam.pair_metres_to_pixels(w, h);

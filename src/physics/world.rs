@@ -2,7 +2,6 @@ use std::fmt;
 use std::ops;
 use std::cell::{RefCell, RefMut, Ref};
 use std::rc::Rc;
-use std::f64;
 
 use physics;
 use physics::body::{self, Body};
@@ -37,8 +36,7 @@ impl<T> World<T> {
         }
     }
 
-    pub fn set_collision_callback(&mut self,
-                                  callback: Option<fn(body::Collision, &mut Body<T>, &mut Body<T>)>) {
+    pub fn set_collision_callback(&mut self, callback: Option<fn(body::Collision, &mut Body<T>, &mut Body<T>)>) {
         self.collision_callback = callback;
     }
 
@@ -96,16 +94,13 @@ impl<T> World<T> {
     }
 }
 
-fn get_collision_impulses<T, U>(collision: body::Collision,
-                                b1: &mut Body<T>,
-                                b2: &mut Body<U>)
-                                -> (Vec2, Vec2) {
+fn get_collision_impulses<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) -> (Vec2, Vec2) {
     let _ = collision;
 
     let relative_speed = (b1.vel - b2.vel).norm();
 
     let mut collision_restitution = (b1.restitution() + b2.restitution()) / 2.0;
-    if relative_speed<VELOCITY_THRESHOLD {
+    if relative_speed < VELOCITY_THRESHOLD {
         collision_restitution = 0.0;
     }
 
@@ -136,43 +131,47 @@ fn get_collision_impulses<T, U>(collision: body::Collision,
      deformation_impulse2 + restoration_impulse2)
 }
 
-fn apply_collision_position_correction<T, U>(collision: body::Collision,
-                                             b1: &mut Body<T>,
-                                             b2: &mut Body<U>) {
+fn apply_collision_position_correction<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) {
     let (x1, y1, x2, y2) = b1.borrow_shape().bounds(b1.pos); // we are restricted to Rect shapes
     let (x3, y3, x4, y4) = b2.borrow_shape().bounds(b2.pos);
     let _ = (x1, x2, x3, x4, y1, y2, y3, y4);
+
     let centre_point = collision.point_a; // centre of collision point
     let correction_vector = collision.normal_a;
-    let penetration_vector = b1.borrow_shape().cast_ray(b1.pos, centre_point, correction_vector.mul(-5.0));
-    let displacement: Vec2; // distance that the bodies will move after correction
-    match penetration_vector {
-        Some(thing) => {
-            displacement = correction_vector.scale_to(centre_point-thing);
-        },
-        None => {displacement = Vec2::new(0.0, 0.0);}
-    }
-        if !b1.is_static() && !b2.is_static() {
-            b1.pos = b1.pos + displacement;
-            b2.pos = b2.pos - displacement;
-        } else {
-            if b2.is_static() && !b1.is_static() {
-                b1.pos = b1.pos + displacement.mul(2.0);
-            }
-            if b1.is_static() && !b2.is_static() {
-                b2.pos = b2.pos - displacement.mul(2.0);
-            }
+    let penetration_vector = b1.borrow_shape()
+                               .cast_ray(b1.pos, centre_point, correction_vector.mul(-5.0));
+
+    // distance that the bodies will move after correction
+    let displacement = match penetration_vector {
+        Some(thing) => correction_vector.scale_to(centre_point - thing),
+        None => Vec2::new(0.0, 0.0),
+    };
+
+    if !b1.is_static() && !b2.is_static() {
+        b1.pos = b1.pos + displacement;
+        b2.pos = b2.pos - displacement;
+    } else {
+        if b2.is_static() && !b1.is_static() {
+            b1.pos = b1.pos + displacement.mul(2.0);
         }
+        if b1.is_static() && !b2.is_static() {
+            b2.pos = b2.pos - displacement.mul(2.0);
+        }
+    }
 }
 
 fn solve_collision<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut Body<U>) {
     if b1.is_static() && b2.is_static() {
         return;
     }
+
     let (impulse1, impulse2) = get_collision_impulses(collision, b1, b2);
+
     apply_collision_position_correction(collision, b1, b2);
-    let friction = (b1.def.friction+b2.def.friction)/2.0;
+
+    let friction = (b1.def.friction + b2.def.friction) / 2.0;
     let (friction1, friction2) = (impulse1.mul(friction), impulse2.mul(friction));
+
     b1.apply_impulse(impulse1);
     b1.apply_friction(friction1);
     b2.apply_impulse(impulse2);
@@ -221,27 +220,27 @@ impl Vec2 {
         }
     }
 
-    pub fn align_quadrant(self, align: Vec2) ->  Vec2 {
-        let reduced_x = align.x/align.x.abs();
-        let reduced_y = align.y/align.y.abs();
+    pub fn align_quadrant(self, align: Vec2) -> Vec2 {
+        let reduced_x = align.x / align.x.abs();
+        let reduced_y = align.y / align.y.abs();
         Vec2 {
-            x: self.x*reduced_x,
-            y: self.y*reduced_y,
+            x: self.x * reduced_x,
+            y: self.y * reduced_y,
         }
     }
 
     pub fn unit(self) -> Vec2 {
-        if self.norm()==0.0 {
+        if self.norm() == 0.0 {
             Vec2::new(0.0, 0.0)
         } else {
-        self.mul(1.0/self.norm())
+            self.mul(1.0 / self.norm())
         }
     }
 
     pub fn scale_to(self, vector: Vec2) -> Vec2 {
         let aligned_vector = vector.align_quadrant(self);
-        let scale_x = aligned_vector.x/self.x;
-        let scale_y = aligned_vector.y/self.y;
+        let scale_x = aligned_vector.x / self.x;
+        let scale_y = aligned_vector.y / self.y;
         let scale = scale_x.abs().min(scale_y.abs());
         self.mul(scale)
     }
@@ -249,8 +248,8 @@ impl Vec2 {
     pub fn projection_onto(self, vector: Vec2) -> Vec2 {
         if vector.x == 0.0 && vector.y == 0.0 {
             Vec2::new(0.0, 0.0)
-        }else {
-        vector.mul(self.dot(vector)/vector.dot(vector))
+        } else {
+            vector.mul(self.dot(vector) / vector.dot(vector))
         }
     }
 
@@ -260,9 +259,10 @@ impl Vec2 {
 
     pub fn get_unit_orthogonal(self) -> Vec2 {
         Vec2 {
-            x: self.y*-1.0,
+            x: self.y * -1.0,
             y: self.x,
-        }.unit()
+        }
+        .unit()
     }
 
     pub fn angle_with(self, other: Vec2) -> f64 {
@@ -286,7 +286,6 @@ impl ops::Add for Vec2 {
         }
     }
 }
-
 
 impl ops::Sub for Vec2 {
     type Output = Vec2;

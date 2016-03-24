@@ -25,7 +25,10 @@ pub fn init() {
 
     let mut vec = Vec::new();
     for i in 0..init_len {
-        vec.push(ChannelID { chan: sdl2_mixer::channel(i), used: false })
+        vec.push(ChannelID {
+            chan: sdl2_mixer::channel(i),
+            used: false,
+        })
     }
 
     vec[0].used = true;
@@ -70,14 +73,12 @@ impl Sound {
         let mut full_path = media_handle.base_path.clone();
         full_path.push(&Path::new(path));
 
-        Sound {
-            chunk: Chunk::from_file(full_path.as_path()).unwrap(),
-        }
+        Sound { chunk: Chunk::from_file(full_path.as_path()).unwrap() }
     }
 
     pub fn play(&self, loops: isize) {
         let chan = next_channel();
         chan.play(&self.chunk, loops).unwrap();
-        //chan.set_distance(200);
+        // chan.set_distance(200);
     }
 }

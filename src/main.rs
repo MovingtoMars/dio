@@ -22,10 +22,8 @@ mod audio;
 fn main() {
     let sdl = sdl2::init().unwrap();
     sdl.audio().unwrap();
-    //let mut timer = sdl.timer().unwrap();
-    sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH |
-                                          INIT_MODPLUG |
-                                          INIT_OGG).unwrap();
+    // let mut timer = sdl.timer().unwrap();
+    sdl2_mixer::init(INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH | INIT_MODPLUG | INIT_OGG).unwrap();
     let frequency = 44100;
     let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
     let channels = 2; // Stereo
@@ -48,7 +46,7 @@ fn main() {
     let (cx, cy) = world.data.get_centre_pos();
     let cam = interface::camera::Camera::new(cx, cy, 50.0);
 
-    //let media_handle = media::MediaHandle::new(window.factory.clone());
+    // let media_handle = media::MediaHandle::new(window.factory.clone());
 
     {
         let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
@@ -56,25 +54,15 @@ fn main() {
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
-        let player = Rc::new(
-            RefCell::new(
-                Box::new(
-                    engine::entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)
-                ) as Box<engine::entity::Entity>
-            )
-        );
+        let player =
+            Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
         world.push_entity(player.clone());
-        let block = Rc::new(
-            RefCell::new(
-                Box::new(
-                    engine::entity::DynamicBlock::new(&mut world.data, 5.0, 7.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
-        let block2 = Rc::new(
-            RefCell::new(
-                Box::new(
-                   engine::entity::DynamicBlock::new(&mut world.data, 5.0, 8.5, 0.5, 0.5))
-                    as Box<engine::entity::Entity>));
-        world.push_entity(block.clone());
-        world.push_entity(block2.clone());
+        let block =
+            Rc::new(RefCell::new(Box::new(engine::entity::DynamicBlock::new(&mut world.data, 5.0, 7.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
+        let block2 =
+            Rc::new(RefCell::new(Box::new(engine::entity::DynamicBlock::new(&mut world.data, 5.0, 8.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
+        world.push_entity(block);
+        world.push_entity(block2);
         world.set_player(Option::Some(player));
     }
 
