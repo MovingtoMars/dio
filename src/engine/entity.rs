@@ -77,33 +77,65 @@ impl Entity for Ground {
     fn update(&mut self, _: &mut WorldData, _: f64) {}
 }
 
-pub struct DynamicBlock {
+#[derive(Clone,Copy)]
+pub enum CrateMaterial {
+    Steel,
+    Wood,
+}
+
+impl CrateMaterial {
+    pub fn density(self) -> f64 {
+        match self {
+            CrateMaterial::Steel => 8000.0,
+            CrateMaterial::Wood => 700.0,
+        }
+    }
+
+    pub fn restitution(self) -> f64 {
+        match self {
+            CrateMaterial::Steel => 0.6,
+            CrateMaterial::Wood => 0.4,
+        }
+    }
+}
+
+pub struct Crate {
     body_handle: physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>>,
     hw: f64,
     hh: f64,
+    material: CrateMaterial,
 }
 
-impl DynamicBlock {
-    pub fn new(world_data: &mut WorldData, x: f64, y: f64, hw: f64, hh: f64) -> DynamicBlock {
+impl Crate {
+    pub fn new(world_data: &mut WorldData, mat: CrateMaterial, x: f64, y: f64, hw: f64, hh: f64) -> Crate {
         let mut def = physics::body::BodyDef::new(physics::body::BodyType::Dynamic);
-        def.density = 1.0;
+        def.density = mat.density();
+        def.restitution = mat.restitution();
         let shape = physics::shape::Rect::new(hw, hh);
         let mut body = physics::body::Body::new(Box::new(shape), def);
         body.pos = physics::world::Vec2 { x: x, y: y };
         let handle = world_data.physics_world.add_body(body);
 
-        DynamicBlock {
+        Crate {
             body_handle: handle,
             hw: hw,
             hh: hh,
+            material: mat,
         }
     }
 }
 
-impl Entity for DynamicBlock {
+impl Entity for Crate {
     fn render(&self, physics_world: &PhysicsWorld, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(physics_world);
-        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h);
+
+        let (c1, c2) = match self.material {
+            CrateMaterial::Steel => ([0.2, 0.2, 0.2, 1.0], [0.3, 0.3, 0.3, 1.0]),
+            CrateMaterial::Wood => ([0.4, 0.2, 0.0, 1.0], [0.6, 0.3, 0.0, 1.0]),
+        };
+
+        render::fill_rectangle(win, cam, c1, x, y, w, h);
+        render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8);
     }
 
     fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>> {
@@ -135,7 +167,7 @@ pub struct Player {
 impl Player {
     pub fn new(world_data: &mut WorldData, x: f64, y: f64, hw: f64, hh: f64) -> Player {
         let mut def = physics::body::BodyDef::new(physics::body::BodyType::Dynamic);
-        def.density = 1.0;
+        def.density = 1000.0;
         let shape = physics::shape::Rect::new(hw, hh);
         let mut body = physics::body::Body::new(Box::new(shape), def);
         body.pos = physics::world::Vec2 { x: x, y: y };

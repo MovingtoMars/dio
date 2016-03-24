@@ -19,6 +19,8 @@ mod physics;
 mod media;
 mod audio;
 
+use engine::entity;
+
 fn main() {
     let sdl = sdl2::init().unwrap();
     sdl.audio().unwrap();
@@ -49,18 +51,18 @@ fn main() {
     // let media_handle = media::MediaHandle::new(window.factory.clone());
 
     {
-        let gnd = engine::entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
-        let gnd2 = engine::entity::Ground::new(&mut world.data, 0.5, 5.0, 0.5, 5.0);
+        let gnd = entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
+        let gnd2 = entity::Ground::new(&mut world.data, 0.5, 5.0, 0.5, 5.0);
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
         let player =
-            Rc::new(RefCell::new(Box::new(engine::entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)) as Box<engine::entity::Entity>));
+            Rc::new(RefCell::new(Box::new(entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)) as Box<entity::Entity>));
         world.push_entity(player.clone());
         let block =
-            Rc::new(RefCell::new(Box::new(engine::entity::DynamicBlock::new(&mut world.data, 5.0, 7.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
+            Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Wood, 5.0, 7.5, 0.5, 0.5)) as Box<entity::Entity>));
         let block2 =
-            Rc::new(RefCell::new(Box::new(engine::entity::DynamicBlock::new(&mut world.data, 5.0, 8.5, 0.5, 0.5)) as Box<engine::entity::Entity>));
+            Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Steel, 5.0, 8.5, 0.5, 0.5)) as Box<entity::Entity>));
         world.push_entity(block);
         world.push_entity(block2);
         world.set_player(Option::Some(player));
