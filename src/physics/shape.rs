@@ -4,11 +4,26 @@ use physics::world::Vec2;
 use physics::body;
 
 pub trait Shape {
+    /// Calculates (x1, y1, x2, y2) where (x1, y1) are the coordinates of the top-left corner and
+    /// (x2, y2) are the coordinates of the bottom-right corner.
+    /// `pos` is the location of the shape.
     fn bounds(&self, pos: Vec2) -> (f64, f64, f64, f64);
+
+    /// Let the line between points `origin` and `origin + dir` be L. Calculate the intersection
+    /// of a side of the shape with L closest to `origin` and return the point of intersection,
+    /// or none if there is no intersection.
     fn cast_ray(&self, pos: Vec2, origin: Vec2, dir: Vec2) -> Option<Vec2>;
+
+    /// Tests if `point` is within the shape.
     fn contains(&self, pos: Vec2, point: Vec2) -> bool;
+
+    /// Calculates the mass of the shape.
     fn mass(&self, density: f64) -> f64;
+
+    // Returns the shape as a ShapeVariant.
     fn variant(&self) -> ShapeVariant;
+
+    /// Tests if this and another shape collide.
     fn collides_with(&self, self_pos: Vec2, other: &Shape, other_pos: Vec2) -> Option<body::Collision>;
 }
 

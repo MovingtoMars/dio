@@ -22,9 +22,18 @@ pub enum BodyType {
 
 #[derive(Clone,Copy)]
 pub struct BodyDef {
+    /// A value in the range [0,Inf) used along with the area of the shape to calculate mass.
     pub density: f64,
+
+    /// The type of body.
     pub body_type: BodyType,
+
+    /// A value in the range [0,1] which indicates the elasticity of a collision with this body.
+    /// In a collision, the restitution of the collision is calculated by averaging the restitutions
+    /// of the two bodies involved.
     pub restitution: f64,
+
+    /// A value in the range [0,Inf) used to calculate friction.
     pub friction: f64,
 }
 
@@ -103,7 +112,7 @@ impl<T> Body<T> {
         self.applied_friction.clear();
     }
 
-    pub fn current_net_force(&mut self, dt: f64) -> Vec2 {
+    fn current_net_force(&mut self, dt: f64) -> Vec2 {
         let mut net_force = Vec2::new(0.0, 0.0);
 
         for force in &mut self.applied_forces {

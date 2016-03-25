@@ -10,10 +10,10 @@ use media;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref CHANNELS: Mutex<Vec<ChannelID>> = Mutex::new(vec![]);
+    static ref CHANNELS: Mutex<Vec<ChannelUsage>> = Mutex::new(vec![]);
 }
 
-struct ChannelID {
+struct ChannelUsage {
     chan: Channel,
     used: bool,
 }
@@ -25,7 +25,7 @@ pub fn init() {
 
     let mut vec = Vec::new();
     for i in 0..init_len {
-        vec.push(ChannelID {
+        vec.push(ChannelUsage {
             chan: sdl2_mixer::channel(i),
             used: false,
         })

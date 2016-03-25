@@ -6,8 +6,12 @@ use std::rc::Rc;
 use physics;
 use physics::body::{self, Body};
 
+
+/// TODO if this becomes necessary.
 pub const COLLISION_BUFFER: f64 = 0.005;
-pub const VELOCITY_THRESHOLD: f64 = 1.0; // collisions below this are treated inelastically
+
+/// The threshold below which collisions are treated inelastically.
+pub const VELOCITY_THRESHOLD: f64 = 1.0;
 
 pub struct BodyHandle<T> {
     body: Rc<RefCell<Body<T>>>,
