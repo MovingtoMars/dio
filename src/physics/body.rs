@@ -42,7 +42,7 @@ impl BodyDef {
         BodyDef {
             density: 1.0,
             body_type: body_type,
-            restitution: 0.5,
+            restitution: 0.2,
             friction: 0.6,
         }
     }
@@ -62,6 +62,8 @@ pub struct Body<T> {
     applied_impulses: Vec<Vec2>,
     applied_friction: Vec<Vec2>,
 
+    pub on_ground: bool,
+
     prev_net_force: Vec2, // TODO: when sleeping is implemented, make sure to set this to 0
 }
 
@@ -76,6 +78,7 @@ impl<T> Body<T> {
             applied_forces: Vec::new(),
             applied_impulses: Vec::new(),
             applied_friction: Vec::new(),
+            on_ground: false,
             prev_net_force: Vec2::new(0.0, 0.0),
         }
     }

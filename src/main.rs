@@ -103,6 +103,13 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
                                     let p = world.get_player().unwrap();
                                     p.borrow_mut().as_player().unwrap().set_moving_right(true);
                                 }
+                                Key::Space => {
+                                    let p = world.get_player().unwrap();
+                                    if p.borrow_mut().as_player().unwrap().touching_ground {
+                                        p.borrow_mut().as_player().unwrap().jump(&mut world.data);
+                                        p.borrow_mut().as_player().unwrap().touching_ground = false;
+                                    }
+                                }
                                 _ => {}
                             }
                         }

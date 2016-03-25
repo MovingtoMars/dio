@@ -164,11 +164,12 @@ pub struct Player {
 
     moving_right: bool,
     moving_left: bool,
+    pub touching_ground: bool,
 }
 
 impl Player {
     pub fn new(world_data: &mut WorldData, x: f64, y: f64, hw: f64, hh: f64) -> Player {
-        let mut def = BodyDef::new(BodyType::Dynamic);
+        let mut def = BodyDef::new(physics::body::BodyType::Dynamic);
         def.density = 1000.0;
         let shape = physics::shape::Rect::new(hw, hh);
         let mut body = Body::new(Box::new(shape), def);
@@ -181,6 +182,7 @@ impl Player {
             hh: hh,
             moving_right: false,
             moving_left: false,
+            touching_ground: false,
         }
     }
 
@@ -190,6 +192,12 @@ impl Player {
 
     pub fn set_moving_left(&mut self, moving: bool) {
         self.moving_left = moving;
+    }
+
+    pub fn jump(&mut self, world_data: &mut WorldData) {
+        let mut body = world_data.physics_world.get_body_mut(&self.body_handle);
+        body.vel.y = -6.0;
+        body.on_ground = false;
     }
 }
 
@@ -222,9 +230,11 @@ impl Entity for Player {
 
         let mut vel = body.vel;
 
-        let touching_ground = true; // TODO
+        if body.on_ground {
+            self.touching_ground = true;
+        }
 
-        if touching_ground {
+        if self.touching_ground { // why??????
             if self.moving_right == self.moving_left {
                 let neg = vel.x < 0.0;
                 vel.x = (vel.x.abs() - PLAYER_ACCELERATION).max(0.0);
@@ -243,6 +253,7 @@ impl Entity for Player {
 
         body.vel = vel;
     }
+
 
     fn as_player(&mut self) -> Option<&mut Player> {
         Option::Some(self)

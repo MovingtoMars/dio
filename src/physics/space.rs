@@ -13,6 +13,9 @@ pub const COLLISION_BUFFER: f64 = 0.005;
 /// The threshold below which collisions are treated inelastically.
 pub const VELOCITY_THRESHOLD: f64 = 1.0;
 
+// Max angle at which it is considered 'ground'
+pub const GROUND_ANGLE: f64 = 3.14/16.0;
+
 pub struct BodyHandle<T> {
     body: Rc<RefCell<Body<T>>>,
 }
@@ -131,6 +134,12 @@ fn get_collision_impulses<T, U>(collision: body::Collision, b1: &mut Body<T>, b2
     let deformation_impulse2 = (final_velocity.mul(b2.mass()) - momentum2).projection_onto(collision.normal_a);
     let restoration_impulse1 = deformation_impulse1.mul(collision_restitution);
     let restoration_impulse2 = deformation_impulse2.mul(collision_restitution);
+        if deformation_impulse1.angle_with(Vec2::new(0.0, -1.0)).abs() < GROUND_ANGLE {
+            b1.on_ground = true;
+        }
+        if deformation_impulse2.angle_with(Vec2::new(0.0, -1.0)).abs() < GROUND_ANGLE {
+            b2.on_ground = true;
+        }
 
     (deformation_impulse1 + restoration_impulse1,
      deformation_impulse2 + restoration_impulse2)
