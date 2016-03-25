@@ -28,13 +28,13 @@ pub fn init() {
         vec.push(ChannelUsage {
             chan: sdl2_mixer::channel(i),
             used: false,
-        })
+        });
     }
 
     vec[0].used = true;
 
     fn on_channel_finished(chan: Channel) {
-        println!("{}", get_channel_id(chan));
+        println!("Channel {} finished", get_channel_id(chan));
         CHANNELS.lock().unwrap()[get_channel_id(chan) as usize].used = false;
     }
 
@@ -54,14 +54,30 @@ fn get_channel_id(mut chan: Channel) -> isize {
 }
 
 fn next_channel() -> Channel {
-    for ref mut c in &mut CHANNELS.lock().unwrap().iter_mut() {
+    let mut channels = CHANNELS.lock().unwrap();
+
+    for ref mut c in &mut channels.iter_mut() {
         if !c.used {
             c.used = true;
             return c.chan;
         }
     }
 
-    panic!("oh no (TODO more channels)");
+    let old_len = channels.len();
+    let new_len = old_len * 2;
+    sdl2_mixer::allocate_channels(new_len as isize);
+
+    for i in old_len..new_len {
+        channels.push(ChannelUsage {
+            chan: sdl2_mixer::channel(i as isize),
+            used: false,
+        });
+    }
+
+    println!("Allocated more channels: old_len={} new_len={}", old_len, new_len);
+
+    channels[old_len].used = true;
+    channels[old_len].chan
 }
 
 pub struct Sound {
