@@ -1,6 +1,6 @@
 use std::f64;
 
-use physics::world::Vec2;
+use physics::space::Vec2;
 use physics::body;
 
 pub trait Shape {
@@ -171,7 +171,7 @@ pub fn lines_intersect(p1: Vec2, d1: Vec2, p2: Vec2, d2: Vec2) -> Option<Vec2> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use physics::world::Vec2;
+    use physics::space::Vec2;
 
     #[test]
     fn test_lines_intersect() {

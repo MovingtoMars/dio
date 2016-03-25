@@ -11,7 +11,7 @@ use physics;
 pub struct WorldData {
     width: f64, // metres
     height: f64, // metres
-    pub physics_world: physics::world::World<Rc<RefCell<Box<Entity>>>>,
+    pub physics_world: physics::space::Space<Rc<RefCell<Box<Entity>>>>,
 }
 
 pub struct World {
@@ -26,7 +26,7 @@ impl WorldData {
         WorldData {
             width: width,
             height: height,
-            physics_world: physics::world::World::new(physics::world::Vec2::new(0.0, 9.81)),
+            physics_world: physics::space::Space::new(physics::space::Vec2::new(0.0, 9.81)),
         }
     }
 

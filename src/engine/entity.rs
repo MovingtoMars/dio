@@ -5,6 +5,8 @@ use std::cell::RefCell;
 use std::boxed::Box;
 
 use physics;
+use physics::body::*;
+use physics::space::*;
 
 use piston_window::*;
 use engine::world::*;
@@ -15,14 +17,14 @@ use render;
 // x, y: the *centre* position of the entity
 // hw, hh: the half-width and half-height of the entity
 
-pub type PhysicsWorld = physics::world::World<Rc<RefCell<Box<Entity>>>>;
+pub type PhysicsSpace = Space<Rc<RefCell<Box<Entity>>>>;
 
 pub trait Entity {
-    fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>>;
-    fn get_centre(&self, physics_world: &PhysicsWorld) -> (f64, f64);
-    fn get_bounding_box(&self, physics_world: &PhysicsWorld) -> (f64, f64, f64, f64);
+    fn get_body_handle(&mut self) -> &BodyHandle<Rc<RefCell<Box<Entity>>>>;
+    fn get_centre(&self, physics_world: &PhysicsSpace) -> (f64, f64);
+    fn get_bounding_box(&self, physics_world: &PhysicsSpace) -> (f64, f64, f64, f64);
 
-    fn render(&self, physics_world: &PhysicsWorld, win: &PistonWindow, cam: &Camera);
+    fn render(&self, physics_world: &PhysicsSpace, win: &PistonWindow, cam: &Camera);
     fn update(&mut self, world: &mut WorldData, dt: f64);
 
     fn as_player(&mut self) -> Option<&mut Player> {
@@ -31,7 +33,7 @@ pub trait Entity {
 }
 
 pub struct Ground {
-    body_handle: physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>>,
+    body_handle: BodyHandle<Rc<RefCell<Box<Entity>>>>,
     hw: f64,
     hh: f64,
 }
@@ -40,10 +42,10 @@ impl Ground {
     pub fn new(world_data: &mut WorldData, x: f64, y: f64, hw: f64, hh: f64) -> Ground {
         // TODO static
 
-        let def = physics::body::BodyDef::new(physics::body::BodyType::Static);
+        let def = BodyDef::new(BodyType::Static);
         let shape = physics::shape::Rect::new(hw, hh);
-        let mut body = physics::body::Body::new(Box::new(shape), def);
-        body.pos = physics::world::Vec2 { x: x, y: y };
+        let mut body = Body::new(Box::new(shape), def);
+        body.pos = physics::space::Vec2 { x: x, y: y };
         let handle = world_data.physics_world.add_body(body);
 
         Ground {
@@ -55,21 +57,21 @@ impl Ground {
 }
 
 impl Entity for Ground {
-    fn render(&self, physics_world: &PhysicsWorld, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &PhysicsSpace, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(physics_world);
         render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h);
     }
 
-    fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>> {
+    fn get_body_handle(&mut self) -> &BodyHandle<Rc<RefCell<Box<Entity>>>> {
         &mut self.body_handle
     }
 
-    fn get_centre(&self, physics_world: &PhysicsWorld) -> (f64, f64) {
+    fn get_centre(&self, physics_world: &PhysicsSpace) -> (f64, f64) {
         let trans = physics_world.get_body(&self.body_handle).pos;
         (trans.x, trans.y)
     }
 
-    fn get_bounding_box(&self, physics_world: &PhysicsWorld) -> (f64, f64, f64, f64) {
+    fn get_bounding_box(&self, physics_world: &PhysicsSpace) -> (f64, f64, f64, f64) {
         let (cx, cy) = self.get_centre(physics_world);
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
@@ -100,7 +102,7 @@ impl CrateMaterial {
 }
 
 pub struct Crate {
-    body_handle: physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>>,
+    body_handle: BodyHandle<Rc<RefCell<Box<Entity>>>>,
     hw: f64,
     hh: f64,
     material: CrateMaterial,
@@ -108,12 +110,12 @@ pub struct Crate {
 
 impl Crate {
     pub fn new(world_data: &mut WorldData, mat: CrateMaterial, x: f64, y: f64, hw: f64, hh: f64) -> Crate {
-        let mut def = physics::body::BodyDef::new(physics::body::BodyType::Dynamic);
+        let mut def = BodyDef::new(BodyType::Dynamic);
         def.density = mat.density();
         def.restitution = mat.restitution();
         let shape = physics::shape::Rect::new(hw, hh);
-        let mut body = physics::body::Body::new(Box::new(shape), def);
-        body.pos = physics::world::Vec2 { x: x, y: y };
+        let mut body = Body::new(Box::new(shape), def);
+        body.pos = physics::space::Vec2 { x: x, y: y };
         let handle = world_data.physics_world.add_body(body);
 
         Crate {
@@ -126,7 +128,7 @@ impl Crate {
 }
 
 impl Entity for Crate {
-    fn render(&self, physics_world: &PhysicsWorld, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &PhysicsSpace, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(physics_world);
 
         let (c1, c2) = match self.material {
@@ -138,16 +140,16 @@ impl Entity for Crate {
         render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8);
     }
 
-    fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>> {
+    fn get_body_handle(&mut self) -> &BodyHandle<Rc<RefCell<Box<Entity>>>> {
         &mut self.body_handle
     }
 
-    fn get_centre(&self, physics_world: &PhysicsWorld) -> (f64, f64) {
+    fn get_centre(&self, physics_world: &PhysicsSpace) -> (f64, f64) {
         let trans = physics_world.get_body(&self.body_handle).pos;
         (trans.x, trans.y)
     }
 
-    fn get_bounding_box(&self, physics_world: &PhysicsWorld) -> (f64, f64, f64, f64) {
+    fn get_bounding_box(&self, physics_world: &PhysicsSpace) -> (f64, f64, f64, f64) {
         let (cx, cy) = self.get_centre(physics_world);
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
@@ -156,7 +158,7 @@ impl Entity for Crate {
 }
 
 pub struct Player {
-    body_handle: physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>>,
+    body_handle: BodyHandle<Rc<RefCell<Box<Entity>>>>,
     hw: f64,
     hh: f64,
 
@@ -166,11 +168,11 @@ pub struct Player {
 
 impl Player {
     pub fn new(world_data: &mut WorldData, x: f64, y: f64, hw: f64, hh: f64) -> Player {
-        let mut def = physics::body::BodyDef::new(physics::body::BodyType::Dynamic);
+        let mut def = BodyDef::new(BodyType::Dynamic);
         def.density = 1000.0;
         let shape = physics::shape::Rect::new(hw, hh);
-        let mut body = physics::body::Body::new(Box::new(shape), def);
-        body.pos = physics::world::Vec2 { x: x, y: y };
+        let mut body = Body::new(Box::new(shape), def);
+        body.pos = physics::space::Vec2 { x: x, y: y };
         let handle = world_data.physics_world.add_body(body);
 
         Player {
@@ -196,21 +198,21 @@ const PLAYER_MAX_SPEED: f64 = USAIN_BOLT_MAX_SPEED * 0.5;
 const PLAYER_ACCELERATION: f64 = 1.5;
 
 impl Entity for Player {
-    fn render(&self, physics_world: &PhysicsWorld, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &PhysicsSpace, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box(physics_world);
         render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h);
     }
 
-    fn get_body_handle(&mut self) -> &physics::world::BodyHandle<Rc<RefCell<Box<Entity>>>> {
+    fn get_body_handle(&mut self) -> &BodyHandle<Rc<RefCell<Box<Entity>>>> {
         &mut self.body_handle
     }
 
-    fn get_centre(&self, physics_world: &PhysicsWorld) -> (f64, f64) {
+    fn get_centre(&self, physics_world: &PhysicsSpace) -> (f64, f64) {
         let trans = physics_world.get_body(&self.body_handle).pos;
         (trans.x, trans.y)
     }
 
-    fn get_bounding_box(&self, physics_world: &PhysicsWorld) -> (f64, f64, f64, f64) {
+    fn get_bounding_box(&self, physics_world: &PhysicsSpace) -> (f64, f64, f64, f64) {
         let (cx, cy) = self.get_centre(physics_world);
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }

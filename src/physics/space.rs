@@ -23,7 +23,7 @@ impl<T> Clone for BodyHandle<T> {
     }
 }
 
-pub struct World<T> {
+pub struct Space<T> {
     pub gravity: Vec2,
 
     bodies: Vec<BodyHandle<T>>,
@@ -31,9 +31,9 @@ pub struct World<T> {
     collision_callback: Option<fn(body::Collision, &mut Body<T>, &mut Body<T>)>,
 }
 
-impl<T> World<T> {
-    pub fn new(gravity: Vec2) -> World<T> {
-        World {
+impl<T> Space<T> {
+    pub fn new(gravity: Vec2) -> Space<T> {
+        Space {
             gravity: gravity,
             bodies: Vec::new(),
             collision_callback: None,
@@ -183,7 +183,7 @@ fn solve_collision<T, U>(collision: body::Collision, b1: &mut Body<T>, b2: &mut 
     b2.apply_friction(friction2);
 }
 
-/// This function is called every time World updates. Note that this function will be called a maximum of one time for every possible pair of bodies, on each iteration.
+/// This function is called every time Space updates. Note that this function will be called a maximum of one time for every possible pair of bodies, on each iteration.
 fn check_body_collision<T, U>(b1: &mut Body<T>, b2: &mut Body<U>) -> Option<body::Collision> {
     b1.borrow_shape().collides_with(b1.pos, b2.borrow_shape(), b2.pos)
 }

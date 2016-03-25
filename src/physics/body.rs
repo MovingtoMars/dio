@@ -1,5 +1,5 @@
 use physics::shape;
-use physics::world::Vec2;
+use physics::space::Vec2;
 
 #[derive(Clone,Copy)]
 pub struct Collision {
