@@ -65,6 +65,8 @@ impl World {
     }
 
     pub fn update(&mut self, dt: f64) {
+        assert!(dt > 0.0);
+
         // self.data.b2world.step(dt, 5, 5);
         self.data.physics_world.update(dt);
 

@@ -148,6 +148,9 @@ impl Shape for Rect {
 }
 
 pub fn lines_intersect(p1: Vec2, d1: Vec2, p2: Vec2, d2: Vec2) -> Option<Vec2> {
+    debug_assert!(d1.norm() > 0.0);
+    debug_assert!(d2.norm() > 0.0);
+
     let (x00, y00) = p1.coords();
     let (x01, y01) = d1.coords();
     let (x10, y10) = p2.coords();

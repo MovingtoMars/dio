@@ -64,6 +64,11 @@ impl<T> Space<T> {
     pub fn update(&mut self, dt: f64) {
         for body in &mut self.bodies {
             let mut body = body.body.borrow_mut();
+
+            debug_assert!(body.def.restitution >= 0.0 && body.def.restitution <= 1.0);
+            debug_assert!(body.def.friction >= 0.0);
+            debug_assert!(body.def.density >= 0.0);
+
             if body.body_def().body_type == physics::body::BodyType::Dynamic {
                 let mass = body.mass();
                 body.apply_force(self.gravity.mul(mass));

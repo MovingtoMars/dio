@@ -118,8 +118,8 @@ impl<T> Body<T> {
     fn current_net_force(&mut self, dt: f64) -> Vec2 {
         let mut net_force = Vec2::new(0.0, 0.0);
 
-        for force in &mut self.applied_forces {
-            net_force = net_force + *force;
+        for &mut force in &mut self.applied_forces {
+            net_force = net_force + force;
         }
 
         for impulse in &mut self.applied_impulses {

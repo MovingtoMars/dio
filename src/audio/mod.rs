@@ -93,6 +93,8 @@ impl Sound {
     }
 
     pub fn play(&self, loops: isize) {
+        assert!(loops >= 0);
+
         let chan = next_channel();
         chan.play(&self.chunk, loops).unwrap();
         // chan.set_distance(200);
