@@ -95,11 +95,11 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
                                 Key::Q => {
                                     return false;
                                 }
-                                Key::Left => {
+                                Key::A => {
                                     let p = world.get_player().unwrap();
                                     p.borrow_mut().as_player().unwrap().set_moving_left(true);
                                 }
-                                Key::Right => {
+                                Key::D => {
                                     let p = world.get_player().unwrap();
                                     p.borrow_mut().as_player().unwrap().set_moving_right(true);
                                 }
@@ -120,13 +120,17 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
                     match *button {
                         Button::Keyboard(key) => {
                             match key {
-                                Key::Left => {
+                                Key::A => {
                                     let p = world.get_player().unwrap();
                                     p.borrow_mut().as_player().unwrap().set_moving_left(false);
                                 }
-                                Key::Right => {
+                                Key::D => {
                                     let p = world.get_player().unwrap();
                                     p.borrow_mut().as_player().unwrap().set_moving_right(false);
+                                }
+                                Key::Space => {
+                                let p = world.get_player().unwrap();
+                                p.borrow_mut().as_player().unwrap().release(&mut world.data);
                                 }
                                 _ => {}
                             }

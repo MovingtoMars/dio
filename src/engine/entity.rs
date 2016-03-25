@@ -165,6 +165,7 @@ pub struct Player {
     moving_right: bool,
     moving_left: bool,
     pub touching_ground: bool,
+    pub release_jump: bool,
 }
 
 impl Player {
@@ -183,6 +184,7 @@ impl Player {
             moving_right: false,
             moving_left: false,
             touching_ground: false,
+            release_jump:true,
         }
     }
 
@@ -198,6 +200,14 @@ impl Player {
         let mut body = world_data.physics_world.get_body_mut(&self.body_handle);
         body.vel.y = -6.0;
         body.on_ground = false;
+    }
+
+    pub fn release(&mut self, world_data: &mut WorldData) {
+        let mut body = world_data.physics_world.get_body_mut(&self.body_handle);
+        if body.vel.y<0.0 && self.release_jump {
+            body.vel.y = body.vel.y * 0.45;
+            self.release_jump = false;
+        }
     }
 }
 
@@ -232,9 +242,11 @@ impl Entity for Player {
 
         if body.on_ground {
             self.touching_ground = true;
+            self.release_jump = true;
         }
 
-        if self.touching_ground { // why??????
+        if self.touching_ground // why??????
+        {
             if self.moving_right == self.moving_left {
                 let neg = vel.x < 0.0;
                 vel.x = (vel.x.abs() - PLAYER_ACCELERATION).max(0.0);
