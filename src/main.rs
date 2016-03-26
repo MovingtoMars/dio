@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(unused_variables)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -15,7 +16,6 @@ use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, I
 mod engine;
 mod render;
 mod interface;
-mod physics;
 mod media;
 mod audio;
 
@@ -142,7 +142,7 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
             }
         }
         Event::Update(UpdateArgs{dt}) => {
-            world.update(dt);
+            world.update(dt as f32);
         }
         _ => {}
     }

@@ -9,3 +9,9 @@ gfx_device_gl = "0.8.2"
 sdl2_mixer = "0.12.0"
 sdl2 = "*"
 lazy_static = "*"
+ncollide_entities = "*"
+nalgebra = "*"
+
+[dependencies.nphysics]
+features = [ "2df32" ]
+path = "../nphysics"

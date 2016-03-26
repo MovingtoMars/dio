@@ -21,7 +21,7 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
 }
 
 // arrays are in [x, y, w, h] format
-pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::ImageHandle, target: [f64; 4], source: Option<[i32; 4]>) {
+pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::ImageHandle, target: [f32; 4], source: Option<[i32; 4]>) {
     let image_bounds = Image {
         color: None,
         rectangle: Some(cam.array_pos_to_screen(win.draw_size(), target)),
@@ -36,10 +36,15 @@ pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::
     });
 }
 
-pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f64, y: f64, w: f64, h: f64) {
+pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f32, y: f32, w: f32, h: f32, rot: f32) {
+    let (x, y, w, h) = {
+        (x + w / 2.0, y + h / 2.0, w, h)
+    };
+
     win.draw_2d(|c, g| {
         let (zx, zy) = cam.pos_to_screen(win.draw_size(), x, y);
         let (w, h) = cam.pair_metres_to_pixels(w, h);
-        rectangle(colour, [zx, zy, w, h], c.transform, g);
+        let rect = [0.0, 0.0, w, h];
+        rectangle(colour, rect, c.transform.trans(zx, zy).rot_rad(rot as f64).trans(-w / 2.0, -h / 2.0), g);
     });
 }
