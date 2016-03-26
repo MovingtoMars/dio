@@ -14,4 +14,5 @@ nalgebra = "*"
 
 [dependencies.nphysics]
 features = [ "2df32" ]
-path = "../nphysics"
+# path = "../nphysics"
+git = "https://github.com/MovingtoMars/nphysics.git"
