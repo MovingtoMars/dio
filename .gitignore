@@ -1,1 +1,5 @@
 target
+a.out
+main
+*.s
+*.o

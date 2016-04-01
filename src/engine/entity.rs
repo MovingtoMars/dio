@@ -1,6 +1,6 @@
 extern crate piston_window;
 extern crate ncollide_entities;
-extern crate nphysics;
+extern crate nphysics2d as nphysics;
 extern crate nalgebra;
 
 use piston_window::*;

@@ -12,7 +12,7 @@ lazy_static = "*"
 ncollide_entities = "*"
 nalgebra = "*"
 
-[dependencies.nphysics]
-features = [ "2df32" ]
+[dependencies.nphysics2d]
+#features = [ "f64" ]
 # path = "../nphysics"
 git = "https://github.com/MovingtoMars/nphysics.git"

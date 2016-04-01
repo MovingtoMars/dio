@@ -1,4 +1,4 @@
-extern crate nphysics;
+extern crate nphysics2d as nphysics;
 
 use std::cell::RefCell;
 use std::rc::Rc;
