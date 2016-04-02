@@ -57,7 +57,7 @@ fn main() {
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
         let player =
-            Rc::new(RefCell::new(Box::new(entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)) as Box<entity::Entity>));
+            Rc::new(RefCell::new(Box::new(entity::Player::new(&mut world.data, 4.0, 6.0, 0.35, 0.95)) as Box<entity::Entity>));
         world.push_entity(player.clone());
         let block =
             Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Wood, 5.0, 7.5, 0.5, 0.5)) as Box<entity::Entity>));

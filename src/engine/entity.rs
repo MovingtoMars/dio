@@ -8,9 +8,9 @@ use engine::world::*;
 use interface::camera::Camera;
 use render;
 
-use self::nalgebra::Rotation;
+use self::nalgebra::{Rotation, Rot2, Vec1, RotationTo, Norm};
 use self::ncollide_entities::shape::Cuboid;
-use self::nphysics::math::{Vect, Orientation};
+use self::nphysics::math::Vect;
 use self::nphysics::object::{RigidBody, RigidBodyHandle};
 
 // NOTE: For all objects that have their velocities changes manually, make sure to turn off the deactivation threshold.
@@ -27,6 +27,7 @@ pub trait Entity {
     fn get_bounding_box(&self) -> (f32, f32, f32, f32);
 
     fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera);
+    fn pre_update(&mut self, world_data: &mut WorldData);
     fn update(&mut self, world: &mut WorldData, dt: f32);
 
     fn as_player(&mut self) -> Option<&mut Player> {
@@ -75,6 +76,7 @@ impl Entity for Ground {
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
 
+    fn pre_update(&mut self, world_data: &mut WorldData) {}
     fn update(&mut self, _: &mut WorldData, _: f32) {}
 }
 
@@ -151,6 +153,7 @@ impl Entity for Crate {
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
 
+    fn pre_update(&mut self, world_data: &mut WorldData) {}
     fn update(&mut self, world_data: &mut WorldData, _: f32) {}
 }
 
@@ -167,8 +170,7 @@ pub struct Player {
 
 impl Player {
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, hw: f32, hh: f32) -> Player {
-
-        let density = 1000.0;
+        let density = 500.0;
 
         let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1);
@@ -219,7 +221,7 @@ impl Player {
 
 const USAIN_BOLT_MAX_SPEED: f32 = 12.4;
 const PLAYER_MAX_SPEED: f32 = USAIN_BOLT_MAX_SPEED * 0.5;
-const PLAYER_ACCELERATION: f32 = 1.5;
+const PLAYER_ACCELERATION: f32 = PLAYER_MAX_SPEED * 2.5;
 
 impl Entity for Player {
     fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
@@ -241,7 +243,12 @@ impl Entity for Player {
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
 
-    fn update(&mut self, world_data: &mut WorldData, _: f32) {
+    fn pre_update(&mut self, world_data: &mut WorldData) {
+        let mut body = self.body_handle.borrow_mut();
+        body.clear_linear_force();
+    }
+
+    fn update(&mut self, world_data: &mut WorldData, dt: f32) {
         let mut body = self.body_handle.borrow_mut();
 
         let mut lvel = body.lin_vel();
@@ -250,6 +257,9 @@ impl Entity for Player {
             self.touching_ground = true;
             self.release_jump = true;
         //}
+
+        let mass = 1.0 / body.inv_mass();
+        let lin_force = mass * PLAYER_ACCELERATION;
 
         //if self.touching_ground // why??????
         {
@@ -261,15 +271,27 @@ impl Entity for Player {
                 }
             } else {
                 if self.moving_left {
-                    lvel.x = (lvel.x - PLAYER_ACCELERATION).max(-PLAYER_MAX_SPEED);
+                    if lvel.norm() < PLAYER_MAX_SPEED {
+                        body.append_lin_force(Vect::new(-lin_force, 0.0));
+                    }
+                    //lvel.x = (lvel.x - PLAYER_ACCELERATION).max(-PLAYER_MAX_SPEED);
                 } else if self.moving_right {
-                    lvel.x = (lvel.x + PLAYER_ACCELERATION).min(PLAYER_MAX_SPEED);
+                    if lvel.norm() < PLAYER_MAX_SPEED {
+                        body.append_lin_force(Vect::new(lin_force, 0.0));
+                    }
+                    //lvel.x = (lvel.x + PLAYER_ACCELERATION).min(PLAYER_MAX_SPEED);
                 }
 
             }
         }
 
         body.set_lin_vel(lvel);
+
+        let pos = *body.position();
+
+        let zero_rot = Rot2::new(Vec1::new(0.0));
+        let delta_rot = pos.rotation.rotation_to(&zero_rot);
+        body.set_rotation(Vec1::new(0.0));
     }
 
 

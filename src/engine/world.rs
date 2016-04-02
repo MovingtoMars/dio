@@ -72,6 +72,11 @@ impl World {
         self.data.physics_world.step(dt);
 
         let data = &mut self.data;
+
+        for e in &mut self.entities {
+            e.borrow_mut().pre_update(data);
+        }
+
         for e in &mut self.entities {
             e.borrow_mut().update(data, dt);
         }
