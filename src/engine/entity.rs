@@ -265,7 +265,7 @@ impl Entity for Player {
         {
             if self.moving_right == self.moving_left {
                 let neg = lvel.x < 0.0;
-                lvel.x = (lvel.x.abs() - PLAYER_ACCELERATION).max(0.0);
+                lvel.x = (lvel.x.abs() - PLAYER_ACCELERATION * dt).max(0.0);
                 if neg {
                     lvel.x = -lvel.x;
                 }
@@ -294,8 +294,62 @@ impl Entity for Player {
         body.set_rotation(Vec1::new(0.0));
     }
 
-
     fn as_player(&mut self) -> Option<&mut Player> {
         Option::Some(self)
+    }
+}
+
+pub struct Knife {
+    body_handle: RigidBodyHandle,
+    hw: f32,
+    hh: f32,
+}
+
+impl Knife {
+    pub fn new(world_data: &mut WorldData, x: f32, y: f32, velocity: Vect) -> Knife {
+        let hw = 0.1;
+        let hh = 0.025;
+        let density = 500.0;
+
+        let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1);
+        body.append_translation(&Vect::new(x, y));
+        body.set_deactivation_threshold(None);
+        body.set_lin_vel(velocity);
+
+        let handle = world_data.physics_world.add_body(body);
+
+        Knife {
+            body_handle: handle,
+            hw: hw,
+            hh: hh,
+        }
+    }
+}
+
+impl Entity for Knife {
+    fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
+        let (x, y, w, h) = self.get_bounding_box();
+        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
+    }
+
+    fn get_body_handle(&mut self) -> &RigidBodyHandle {
+        &mut self.body_handle
+    }
+
+    fn get_centre(&self) -> (f32, f32) {
+        let trans = self.body_handle.borrow().position().translation;
+        (trans.x, trans.y)
+    }
+
+    fn get_bounding_box(&self) -> (f32, f32, f32, f32) {
+        let (cx, cy) = self.get_centre();
+        (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
+    }
+
+    fn pre_update(&mut self, world_data: &mut WorldData) {}
+
+    fn update(&mut self, world_data: &mut WorldData, dt: f32) {
+
     }
 }
