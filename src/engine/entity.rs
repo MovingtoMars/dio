@@ -308,7 +308,7 @@ pub struct Knife {
 impl Knife {
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, velocity: Vect) -> Knife {
         let hw = 0.1;
-        let hh = 0.025;
+        let hh = 0.05;
         let density = 500.0;
 
         let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
@@ -330,7 +330,7 @@ impl Knife {
 impl Entity for Knife {
     fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
+        render::fill_rectangle(win, cam, [0.3, 0.3, 0.3, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
     fn get_body_handle(&mut self) -> &RigidBodyHandle {

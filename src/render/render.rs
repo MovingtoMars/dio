@@ -10,7 +10,7 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
     win.draw_2d(|c, g| {
         clear([0.0; 4], g);
 
-        let (zx, zy) = cam.pos_to_screen(win.draw_size(), 0.0, 0.0);
+        let (zx, zy) = cam.pos_to_screen(0.0, 0.0);
         let (w, h) = cam.pair_metres_to_pixels(world.data.get_width(), world.data.get_height());
         rectangle([1.0; 4], [zx, zy, w, h], c.transform, g);
     });
@@ -24,7 +24,7 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
 pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::ImageHandle, target: [f32; 4], source: Option<[i32; 4]>) {
     let image_bounds = Image {
         color: None,
-        rectangle: Some(cam.array_pos_to_screen(win.draw_size(), target)),
+        rectangle: Some(cam.array_pos_to_screen(target)),
         source_rectangle: source,
     };
 
@@ -42,7 +42,7 @@ pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f32
     };
 
     win.draw_2d(|c, g| {
-        let (zx, zy) = cam.pos_to_screen(win.draw_size(), x, y);
+        let (zx, zy) = cam.pos_to_screen(x, y);
         let (w, h) = cam.pair_metres_to_pixels(w, h);
         let rect = [0.0, 0.0, w, h];
         rectangle(colour, rect, c.transform.trans(zx, zy).rot_rad(rot as f64).trans(-w / 2.0, -h / 2.0), g);
