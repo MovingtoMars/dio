@@ -46,7 +46,7 @@ fn main() {
 
     let mut world = Box::new(engine::world::World::new(engine::world::WorldData::new(14.0, 10.0)));
     let (cx, cy) = world.data.get_centre_pos();
-    let cam = interface::camera::Camera::new(cx, cy, 50.0);
+    let mut cam = interface::camera::Camera::new(cx, cy, 50.0);
 
     // let media_handle = media::MediaHandle::new(window.factory.clone());
 
@@ -71,7 +71,7 @@ fn main() {
     'outer: for e in window {
         match e.event {
             Option::Some(ref val) => {
-                if !process_event(&mut world, &val) {
+                if !process_event(&mut world, &mut cam, &val) {
                     break 'outer;
                 }
             }
@@ -83,67 +83,66 @@ fn main() {
 }
 
 // if returns false, exit event loop
-fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
+fn process_event(world: &mut engine::world::World, cam: &mut interface::camera::Camera, event: &Event) -> bool {
+    if let &Event::Update(UpdateArgs{dt}) = event {
+        world.update(dt as f32);
+        return true;
+    }
+
+    let p1 = world.get_player().unwrap();
+    let mut pb = p1.borrow_mut();
+    let p = pb.as_player().unwrap();
+
     match *event {
         Event::Input(ref i) => {
             match *i {
-                Input::Press(ref button) => {
-                    match *button {
-                        Button::Mouse(mbutton) => println!("{:?}", mbutton),
-                        Button::Keyboard(key) => {
-                            match key {
-                                Key::Q => {
-                                    return false;
-                                }
-                                Key::A => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_left(true);
-                                }
-                                Key::D => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_right(true);
-                                }
-                                Key::Space => {
-                                    let p = world.get_player().unwrap();
-                                    if p.borrow_mut().as_player().unwrap().touching_ground {
-                                        p.borrow_mut().as_player().unwrap().jump(&mut world.data);
-                                        p.borrow_mut().as_player().unwrap().touching_ground = false;
-                                    }
-                                }
-                                _ => {}
+                Input::Move(ref motion) => match *motion {
+                    Motion::MouseCursor(x, y) => {
+                        cam.mouse_x = x;
+                        cam.mouse_y = y;
+                    },
+                    _ => {},
+                },
+                Input::Press(ref button) => match *button {
+                    Button::Mouse(mbutton) => println!("{:?}", mbutton),
+                    Button::Keyboard(key) => match key {
+                        Key::Q => {
+                            return false;
+                        }
+                        Key::A => {
+                            p.set_moving_left(true);
+                        }
+                        Key::D => {
+                            p.set_moving_right(true);
+                        }
+                        Key::Space => {
+                            if p.touching_ground {
+                                p.jump(&mut world.data);
+                                p.touching_ground = false;
                             }
                         }
                         _ => {}
-                    }
-                }
-                Input::Release(ref button) => {
-                    match *button {
-                        Button::Keyboard(key) => {
-                            match key {
-                                Key::A => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_left(false);
-                                }
-                                Key::D => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_right(false);
-                                }
-                                Key::Space => {
-                                let p = world.get_player().unwrap();
-                                p.borrow_mut().as_player().unwrap().release(&mut world.data);
-                                }
-                                _ => {}
-                            }
+                    },
+                    _ => {}
+                },
+                Input::Release(ref button) => match *button {
+                    Button::Keyboard(key) => match key {
+                        Key::A => {
+                            p.set_moving_left(false);
+                        }
+                        Key::D => {
+                            p.set_moving_right(false);
+                        }
+                        Key::Space => {
+                            p.release(&mut world.data);
                         }
                         _ => {}
-                    }
-                }
+                    },
+                    _ => {}
+                },
                 _ => {}
             }
-        }
-        Event::Update(UpdateArgs{dt}) => {
-            world.update(dt as f32);
-        }
+        },
         _ => {}
     }
 

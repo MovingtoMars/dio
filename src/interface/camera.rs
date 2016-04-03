@@ -5,6 +5,10 @@ pub struct Camera {
     pub x: f32,
     pub y: f32,
 
+    // the position in the window where the mouse pointer is
+    pub mouse_x: f64,
+    pub mouse_y: f64,
+
     pub pixels_per_metre: f64,
 }
 
@@ -13,6 +17,8 @@ impl Camera {
         Camera {
             x: x,
             y: y,
+            mouse_x: 0.0, // TODO ???
+            mouse_y: 0.0,
             pixels_per_metre: pixels_per_metre,
         }
     }
