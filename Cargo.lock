@@ -6,7 +6,7 @@ dependencies = [
  "lazy_static 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ncollide_entities 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "nphysics2d 0.2.0 (git+https://github.com/MovingtoMars/nphysics.git)",
+ "nphysics2d 0.2.0 (git+https://github.com/MovingtoMars/nphysics.git?branch=margin_constructor)",
  "piston_window 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sdl2 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sdl2_mixer 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -535,7 +535,7 @@ dependencies = [
 [[package]]
 name = "nphysics2d"
 version = "0.2.0"
-source = "git+https://github.com/MovingtoMars/nphysics.git#a49ca0faf767f01c1353d07700ebbe08a7d3800e"
+source = "git+https://github.com/MovingtoMars/nphysics.git?branch=margin_constructor#def673ce76b7c6a3c369765f8bde136ed674fd9a"
 dependencies = [
  "nalgebra 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ncollide 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -16,3 +16,4 @@ nalgebra = "*"
 #features = [ "f64" ]
 # path = "../nphysics"
 git = "https://github.com/MovingtoMars/nphysics.git"
+branch = "margin_constructor"
