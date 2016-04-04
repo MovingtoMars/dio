@@ -27,7 +27,7 @@ use engine::entity::Player;
 
 use interface::camera::Camera;
 
-use nphysics::math::Vect;
+use nphysics::math::Vector;
 
 const INIT_WIN_WIDTH: u32 = 800;
 const INIT_WIN_HEIGHT: u32 = 600;
@@ -95,7 +95,7 @@ fn main() {
 
 fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
     let (x, y) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
-    let knife = entity::Knife::new(&mut world.data, x, y, Vect::new(0.0, 0.0));
+    let knife = entity::Knife::new(&mut world.data, x, y, Vector::new(0.0, 0.0));
     world.push_entity(Rc::new(RefCell::new(Box::new(knife))));
 }
 

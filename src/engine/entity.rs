@@ -10,7 +10,7 @@ use render;
 
 use self::nalgebra::{Rotation, Rot2, Vec1, RotationTo, Norm};
 use self::ncollide_entities::shape::Cuboid;
-use self::nphysics::math::Vect;
+use self::nphysics::math::Vector;
 use self::nphysics::object::{RigidBody, RigidBodyHandle};
 
 // NOTE: For all objects that have their velocities changes manually, make sure to turn off the deactivation threshold.
@@ -22,11 +22,11 @@ use self::nphysics::object::{RigidBody, RigidBodyHandle};
 const BODY_MARGIN: f32 = 0.04;
 
 pub trait Entity {
-    fn get_body_handle(&mut self) -> &RigidBodyHandle;
+    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32>;
     fn get_centre(&self) -> (f32, f32);
     fn get_bounding_box(&self) -> (f32, f32, f32, f32);
 
-    fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera);
+    fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera);
     fn pre_update(&mut self, world_data: &mut WorldData);
     fn update(&mut self, world: &mut WorldData, dt: f32);
 
@@ -36,16 +36,16 @@ pub trait Entity {
 }
 
 pub struct Ground {
-    body_handle: RigidBodyHandle,
+    body_handle: RigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
 }
 
 impl Ground {
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, hw: f32, hh: f32) -> Ground {
-        let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_static(shape, 0.2, 0.3);
-        body.append_translation(&Vect::new(x, y));
+        body.append_translation(&Vector::new(x, y));
         let handle = world_data.physics_world.add_body(body);
 
         Ground {
@@ -57,12 +57,12 @@ impl Ground {
 }
 
 impl Entity for Ground {
-    fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
         render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle {
+    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
         &mut self.body_handle
     }
 
@@ -103,7 +103,7 @@ impl CrateMaterial {
 }
 
 pub struct Crate {
-    body_handle: RigidBodyHandle,
+    body_handle: RigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
     material: CrateMaterial,
@@ -111,9 +111,9 @@ pub struct Crate {
 
 impl Crate {
     pub fn new(world_data: &mut WorldData, mat: CrateMaterial, x: f32, y: f32, hw: f32, hh: f32) -> Crate {
-        let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_dynamic(shape, mat.density(), mat.restitution(), 0.6);
-        body.append_translation(&Vect::new(x, y));
+        body.append_translation(&Vector::new(x, y));
 
         let handle = world_data.physics_world.add_body(body);
 
@@ -127,7 +127,7 @@ impl Crate {
 }
 
 impl Entity for Crate {
-    fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
 
         let (c1, c2) = match self.material {
@@ -139,7 +139,7 @@ impl Entity for Crate {
         render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle {
+    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
         &mut self.body_handle
     }
 
@@ -158,7 +158,7 @@ impl Entity for Crate {
 }
 
 pub struct Player {
-    body_handle: RigidBodyHandle,
+    body_handle: RigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
 
@@ -172,9 +172,9 @@ impl Player {
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, hw: f32, hh: f32) -> Player {
         let density = 500.0;
 
-        let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1);
-        body.append_translation(&Vect::new(x, y));
+        body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
 
         let handle = world_data.physics_world.add_body(body);
@@ -224,12 +224,12 @@ const PLAYER_MAX_SPEED: f32 = USAIN_BOLT_MAX_SPEED * 0.5;
 const PLAYER_ACCELERATION: f32 = PLAYER_MAX_SPEED * 2.5;
 
 impl Entity for Player {
-    fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
         render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle {
+    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
         &mut self.body_handle
     }
 
@@ -272,12 +272,12 @@ impl Entity for Player {
             } else {
                 if self.moving_left {
                     if lvel.norm() < PLAYER_MAX_SPEED {
-                        body.append_lin_force(Vect::new(-lin_force, 0.0));
+                        body.append_lin_force(Vector::new(-lin_force, 0.0));
                     }
                     //lvel.x = (lvel.x - PLAYER_ACCELERATION).max(-PLAYER_MAX_SPEED);
                 } else if self.moving_right {
                     if lvel.norm() < PLAYER_MAX_SPEED {
-                        body.append_lin_force(Vect::new(lin_force, 0.0));
+                        body.append_lin_force(Vector::new(lin_force, 0.0));
                     }
                     //lvel.x = (lvel.x + PLAYER_ACCELERATION).min(PLAYER_MAX_SPEED);
                 }
@@ -300,20 +300,20 @@ impl Entity for Player {
 }
 
 pub struct Knife {
-    body_handle: RigidBodyHandle,
+    body_handle: RigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
 }
 
 impl Knife {
-    pub fn new(world_data: &mut WorldData, x: f32, y: f32, velocity: Vect) -> Knife {
+    pub fn new(world_data: &mut WorldData, x: f32, y: f32, velocity: Vector<f32>) -> Knife {
         let hw = 0.1;
         let hh = 0.05;
         let density = 500.0;
 
-        let shape = Cuboid::new(Vect::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1);
-        body.append_translation(&Vect::new(x, y));
+        body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
         body.set_lin_vel(velocity);
 
@@ -328,12 +328,12 @@ impl Knife {
 }
 
 impl Entity for Knife {
-    fn render(&self, physics_world: &nphysics::world::World, win: &PistonWindow, cam: &Camera) {
+    fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
         render::fill_rectangle(win, cam, [0.3, 0.3, 0.3, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle {
+    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
         &mut self.body_handle
     }
 

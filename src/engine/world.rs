@@ -9,7 +9,7 @@ use engine::entity::Entity;
 pub struct WorldData {
     width: f32, // metres
     height: f32, // metres
-    pub physics_world: nphysics::world::World,
+    pub physics_world: nphysics::world::World<f32>,
 }
 
 pub struct World {
@@ -22,7 +22,7 @@ pub struct World {
 impl WorldData {
     pub fn new(width: f32, height: f32) -> WorldData {
         let mut physics_world = nphysics::world::World::new();
-        physics_world.set_gravity(nphysics::math::Vect::new(0.0, 9.81));
+        physics_world.set_gravity(nphysics::math::Vector::new(0.0, 9.81));
 
         WorldData {
             width: width,
