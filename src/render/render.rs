@@ -36,6 +36,22 @@ pub fn render_image(win: &PistonWindow, cam: &Camera, image_tex: &media::image::
     });
 }
 
+// vr - vertical radius
+// hr - horizontal radius
+pub fn fill_ellipse(win: &PistonWindow, cam: &Camera, colour: [f32; 4], cx: f32, cy: f32, hr: f32, vr: f32) {
+    win.draw_2d(|c, g| {
+        let (cx, cy) = cam.pos_to_screen(cx, cy);
+        let (hr, vr) = cam.pair_metres_to_pixels(hr, vr);
+        let rect = [cx - hr, cy - vr, hr * 2.0, vr * 2.0];
+        let e = Ellipse{
+            color: colour,
+            border: None,
+            resolution: 100,
+        };
+        g.ellipse(&e, rect, &c.draw_state, c.transform);
+    });
+}
+
 pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f32, y: f32, w: f32, h: f32, rot: f32) {
     let (x, y, w, h) = {
         (x + w / 2.0, y + h / 2.0, w, h)
