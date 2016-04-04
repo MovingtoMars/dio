@@ -8,6 +8,7 @@ extern crate piston_window;
 extern crate sdl2;
 extern crate sdl2_mixer;
 extern crate nphysics2d as nphysics;
+extern crate nalgebra;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -22,12 +23,15 @@ mod media;
 mod audio;
 
 use engine::entity;
+use engine::entity::Entity;
 use engine::world::*;
 use engine::entity::Player;
 
 use interface::camera::Camera;
 
 use nphysics::math::Vector;
+
+use nalgebra::Norm;
 
 const INIT_WIN_WIDTH: u32 = 800;
 const INIT_WIN_HEIGHT: u32 = 600;
@@ -94,8 +98,11 @@ fn main() {
 }
 
 fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
-    let (x, y) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
-    let knife = entity::Knife::new(&mut world.data, x, y, Vector::new(0.0, 0.0));
+    let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
+    let (px, py) = player.get_centre();
+    let vel = Vector::new(kx - px, ky - py).normalize() * entity::KNIFE_INIT_SPEED;
+
+    let knife = entity::Knife::new(&mut world.data, kx, ky, vel);
     world.push_entity(Rc::new(RefCell::new(Box::new(knife))));
 }
 

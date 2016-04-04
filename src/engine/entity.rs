@@ -299,6 +299,8 @@ impl Entity for Player {
     }
 }
 
+pub const KNIFE_INIT_SPEED: f32 = 14.0;
+
 pub struct Knife {
     body_handle: RigidBodyHandle<f32>,
     hw: f32,
