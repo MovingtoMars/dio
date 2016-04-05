@@ -316,8 +316,12 @@ impl Knife {
         let density = 500.0;
 
         // use angle = acos(v.u / (||v|| ||u||)), where u = [1, 0].
-        let angle = (velocity.x / velocity.norm()).acos();
-        let rot = if velocity.y < 0.0 { -angle } else { angle };
+        let rot = if velocity.norm() > 0.0 {
+            let angle = (velocity.x / velocity.norm()).acos();
+            if velocity.y < 0.0 { -angle } else { angle }
+        } else {
+            0.0
+        };
 
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1, Some(BODY_MARGIN));
