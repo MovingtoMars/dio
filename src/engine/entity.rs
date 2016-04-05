@@ -21,6 +21,7 @@ use self::nphysics::object::{RigidBody, RigidBodyHandle};
 
 const BODY_MARGIN: f32 = 0.04;
 
+// TODO: get_aabb() and change get_bounding_box()
 pub trait Entity {
     fn get_body_handle(&mut self) -> &RigidBodyHandle<f32>;
     fn get_centre(&self) -> (f32, f32);
@@ -308,16 +309,22 @@ pub struct Knife {
 }
 
 impl Knife {
+    // Knife's rotation is set to same direction as velocity
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, velocity: Vector<f32>) -> Knife {
-        let hw = 0.1;
+        let hw = 0.15;
         let hh = 0.05;
         let density = 500.0;
+
+        // use angle = acos(v.u / (||v|| ||u||)), where u = [1, 0].
+        let angle = (velocity.x / velocity.norm()).acos();
+        let rot = if velocity.y < 0.0 { -angle } else { angle };
 
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1, Some(BODY_MARGIN));
         body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
         body.set_lin_vel(velocity);
+        body.set_rotation(Vec1::new(rot));
 
         let handle = world_data.physics_world.add_body(body);
 
