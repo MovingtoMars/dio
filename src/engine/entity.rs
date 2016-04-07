@@ -93,6 +93,9 @@ impl<T: Scalar> TimeRigidBodyHandle<T> {
         let cur_lin_vel = handle.lin_vel();
         let cur_ang_vel = handle.ang_vel();
 
+        if self.saved_lin_vel.is_some() && !handle.is_active() {
+            handle.activate(nalgebra::Bounded::max_value());
+        }
         handle.set_lin_vel(cur_lin_vel + saved_lin_vel);
         handle.set_ang_vel(cur_ang_vel + saved_ang_vel);
 
