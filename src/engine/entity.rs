@@ -1,17 +1,23 @@
 extern crate piston_window;
 extern crate ncollide_entities;
+extern crate ncollide_math;
 extern crate nphysics2d as nphysics;
 extern crate nalgebra;
+extern crate num;
+
+use std::ops::Deref;
 
 use piston_window::*;
 use engine::world::*;
 use interface::camera::Camera;
 use render;
 
+use self::ncollide_math::Scalar;
 use self::nalgebra::{Rotation, Rot2, Vec1, RotationTo, Norm};
 use self::ncollide_entities::shape::Cuboid;
-use self::nphysics::math::Vector;
+use self::nphysics::math::{Vector, Orientation};
 use self::nphysics::object::{RigidBody, RigidBodyHandle};
+use self::num::Zero;
 
 // NOTE: For all objects that have their velocities changes manually, make sure to turn off the deactivation threshold.
 
@@ -21,9 +27,92 @@ use self::nphysics::object::{RigidBody, RigidBodyHandle};
 
 const BODY_MARGIN: f32 = 0.04;
 
+pub struct TimeRigidBodyHandle<T: Scalar> {
+    handle: RigidBodyHandle<T>,
+
+    pub saved_lin_vel: Option<Vector<T>>,
+    pub saved_ang_vel: Option<Orientation<T>>,
+}
+
+impl<T: Scalar> TimeRigidBodyHandle<T> {
+    fn new(handle: RigidBodyHandle<T>) -> TimeRigidBodyHandle<T> {
+        TimeRigidBodyHandle{
+            handle: handle,
+            saved_lin_vel: None,
+            saved_ang_vel: None,
+        }
+    }
+
+    // called when time is stopped to gradually slow down body
+    pub fn update_saved_vel(&mut self, dt: f32) {
+        assert!(self.saved_ang_vel.is_none() == self.saved_lin_vel.is_none());
+
+        // use zero values if this body was created during time stop
+        let saved_lin_vel = self.saved_lin_vel.unwrap_or(Vector::zero());
+        let saved_ang_vel = self.saved_ang_vel.unwrap_or(Orientation::zero());
+
+        let mut handle = self.handle.borrow_mut();
+
+        let init_lin_vel = handle.lin_vel();
+        let init_ang_vel = handle.ang_vel();
+
+        let ratio: T = nalgebra::cast(0.01f64.powf(dt as f64));
+        let new_lin_vel = init_lin_vel * ratio;
+        let new_ang_vel = init_ang_vel * ratio;
+
+        // TODO +=
+        self.saved_lin_vel = Some(saved_lin_vel + init_lin_vel - new_lin_vel);
+        self.saved_ang_vel = Some(saved_ang_vel + init_ang_vel - new_ang_vel);
+
+        handle.set_lin_vel(new_lin_vel);
+        handle.set_ang_vel(new_ang_vel);
+    }
+
+    pub fn save_vel(&mut self) {
+        assert!(self.saved_lin_vel.is_none());
+        assert!(self.saved_ang_vel.is_none());
+
+        let mut handle = self.handle.borrow_mut();
+
+        self.saved_lin_vel = Some(handle.lin_vel());
+        self.saved_ang_vel = Some(handle.ang_vel());
+
+        handle.set_lin_vel(Vector::zero());
+        handle.set_ang_vel(Orientation::zero());
+    }
+
+    pub fn restore_vel(&mut self) {
+        assert!(self.saved_ang_vel.is_none() == self.saved_lin_vel.is_none());
+
+        // use zero values if this body was created during time stop
+        let saved_lin_vel = self.saved_lin_vel.unwrap_or(Vector::zero());
+        let saved_ang_vel = self.saved_ang_vel.unwrap_or(Orientation::zero());
+
+        let mut handle = self.handle.borrow_mut();
+
+        let cur_lin_vel = handle.lin_vel();
+        let cur_ang_vel = handle.ang_vel();
+
+        handle.set_lin_vel(cur_lin_vel + saved_lin_vel);
+        handle.set_ang_vel(cur_ang_vel + saved_ang_vel);
+
+        self.saved_lin_vel = None;
+        self.saved_ang_vel = None;
+    }
+}
+
+impl<T: Scalar> Deref for TimeRigidBodyHandle<T> {
+    type Target = RigidBodyHandle<T>;
+
+    fn deref(&self) -> &RigidBodyHandle<T> {
+        &self.handle
+    }
+}
+
+
 // TODO: get_aabb() and change get_bounding_box()
 pub trait Entity {
-    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32>;
+    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32>;
     fn get_centre(&self) -> (f32, f32);
     fn get_bounding_box(&self) -> (f32, f32, f32, f32);
 
@@ -31,13 +120,16 @@ pub trait Entity {
     fn pre_update(&mut self, world_data: &mut WorldData);
     fn update(&mut self, world: &mut WorldData, dt: f32);
 
+    fn on_stop_time(&mut self, world: &mut WorldData) {}
+    fn on_start_time(&mut self, world: &mut WorldData) {}
+
     fn as_player(&mut self) -> Option<&mut Player> {
         Option::None
     }
 }
 
 pub struct Ground {
-    body_handle: RigidBodyHandle<f32>,
+    body_handle: TimeRigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
 }
@@ -50,7 +142,7 @@ impl Ground {
         let handle = world_data.physics_world.add_body(body);
 
         Ground {
-            body_handle: handle,
+            body_handle: TimeRigidBodyHandle::new(handle),
             hw: hw,
             hh: hh,
         }
@@ -63,7 +155,7 @@ impl Entity for Ground {
         render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
+    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
     }
 
@@ -104,7 +196,7 @@ impl CrateMaterial {
 }
 
 pub struct Crate {
-    body_handle: RigidBodyHandle<f32>,
+    body_handle: TimeRigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
     material: CrateMaterial,
@@ -119,7 +211,7 @@ impl Crate {
         let handle = world_data.physics_world.add_body(body);
 
         Crate {
-            body_handle: handle,
+            body_handle: TimeRigidBodyHandle::new(handle),
             hw: hw,
             hh: hh,
             material: mat,
@@ -140,7 +232,7 @@ impl Entity for Crate {
         render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
+    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
     }
 
@@ -159,7 +251,7 @@ impl Entity for Crate {
 }
 
 pub struct Player {
-    body_handle: RigidBodyHandle<f32>,
+    body_handle: TimeRigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
 
@@ -181,7 +273,7 @@ impl Player {
         let handle = world_data.physics_world.add_body(body);
 
         Player {
-            body_handle: handle,
+            body_handle: TimeRigidBodyHandle::new(handle),
             hw: hw,
             hh: hh,
             moving_right: false,
@@ -230,7 +322,7 @@ impl Entity for Player {
         render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
+    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
     }
 
@@ -303,7 +395,7 @@ impl Entity for Player {
 pub const KNIFE_INIT_SPEED: f32 = 14.0;
 
 pub struct Knife {
-    body_handle: RigidBodyHandle<f32>,
+    body_handle: TimeRigidBodyHandle<f32>,
     hw: f32,
     hh: f32,
 }
@@ -333,7 +425,7 @@ impl Knife {
         let handle = world_data.physics_world.add_body(body);
 
         Knife {
-            body_handle: handle,
+            body_handle: TimeRigidBodyHandle::new(handle),
             hw: hw,
             hh: hh,
         }
@@ -346,7 +438,7 @@ impl Entity for Knife {
         render::fill_rectangle(win, cam, [0.3, 0.3, 0.3, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
     }
 
-    fn get_body_handle(&mut self) -> &RigidBodyHandle<f32> {
+    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
     }
 

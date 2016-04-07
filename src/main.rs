@@ -122,10 +122,6 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Event) -> bool {
         return true;
     }
 
-    let p1 = world.get_player().unwrap();
-    let mut pb = p1.borrow_mut();
-    let p = pb.as_player().unwrap();
-
     match *event {
         Event::Input(ref i) => match *i {
             Input::Resize(w, h) => {
@@ -142,24 +138,18 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Event) -> bool {
             Input::Press(ref button) => match *button {
                 Button::Mouse(mbutton) => {
                     if mbutton == MouseButton::Left {
-                        spawn_knife(world, cam, p);
+                        world.with_player(|world, p| spawn_knife(world, cam, p));
                     }
                 },
                 Button::Keyboard(key) => match key {
-                    Key::Q => {
-                        return false;
-                    }
-                    Key::A => {
-                        p.set_moving_left(true);
-                    }
-                    Key::D => {
-                        p.set_moving_right(true);
-                    }
+                    Key::Q => return false,
+                    Key::A => world.with_player(|_, p| p.set_moving_left(true)),
+                    Key::D => world.with_player(|_, p| p.set_moving_right(true)),
                     Key::Space => {
-                        if p.touching_ground {
+                        world.with_player(|world, p| if p.touching_ground {
                             p.jump(&mut world.data);
                             p.touching_ground = false;
-                        }
+                        });
                     }
                     _ => {}
                 },
@@ -167,15 +157,10 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Event) -> bool {
             },
             Input::Release(ref button) => match *button {
                 Button::Keyboard(key) => match key {
-                    Key::A => {
-                        p.set_moving_left(false);
-                    }
-                    Key::D => {
-                        p.set_moving_right(false);
-                    }
-                    Key::Space => {
-                        p.release(&mut world.data);
-                    }
+                    Key::A => world.with_player(|_, p| p.set_moving_left(false)),
+                    Key::D => world.with_player(|_, p| p.set_moving_right(false)),
+                    Key::Space => world.with_player(|world, p| p.release(&mut world.data)),
+                    Key::T => world.stop_time(5.0),
                     _ => {}
                 },
                 _ => {}
