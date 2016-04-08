@@ -100,16 +100,17 @@ fn main() {
 fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
     let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
     let (px, py) = player.get_centre();
-    let vel = Vector::new(kx - px, ky - py).normalize() * entity::KNIFE_INIT_SPEED;
 
     let (_, _, w, h) = player.get_bounding_box();
 
-    let sx = if vel.x < 0.0 {
+    let sx = if kx < px {
         px - w * 0.8
     } else {
         px + w * 0.8
     };
     let sy = py - h * 0.16;
+
+    let vel = Vector::new(kx - sx, ky - sy).normalize() * entity::KNIFE_INIT_SPEED;
 
     let knife = entity::Knife::new(&mut world.data, sx, sy, vel);
     world.push_entity(Rc::new(RefCell::new(Box::new(knife))));

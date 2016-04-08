@@ -120,9 +120,9 @@ pub trait Entity {
     fn get_bounding_box(&self) -> (f32, f32, f32, f32);
 
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera);
-    fn pre_update(&mut self, world_data: &mut WorldData);
     fn update(&mut self, world: &mut WorldData, dt: f32);
 
+    fn pre_update(&mut self, world_data: &mut WorldData) {}
     fn on_stop_time(&mut self, world: &mut WorldData) {}
     fn on_start_time(&mut self, world: &mut WorldData) {}
 
@@ -172,7 +172,6 @@ impl Entity for Ground {
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
 
-    fn pre_update(&mut self, world_data: &mut WorldData) {}
     fn update(&mut self, _: &mut WorldData, _: f32) {}
 }
 
@@ -249,7 +248,6 @@ impl Entity for Crate {
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
 
-    fn pre_update(&mut self, world_data: &mut WorldData) {}
     fn update(&mut self, world_data: &mut WorldData, _: f32) {}
 }
 
@@ -454,8 +452,6 @@ impl Entity for Knife {
         let (cx, cy) = self.get_centre();
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
-
-    fn pre_update(&mut self, world_data: &mut WorldData) {}
 
     fn update(&mut self, world_data: &mut WorldData, dt: f32) {
 
