@@ -1,5 +1,3 @@
-extern crate piston_window;
-
 pub struct Camera {
     // the position of the world which is at the centre of the screen (in metres)
     pub x: f32,

@@ -1,10 +1,3 @@
-extern crate piston_window;
-extern crate ncollide_entities;
-extern crate ncollide_math;
-extern crate nphysics2d as nphysics;
-extern crate nalgebra;
-extern crate num;
-
 use std::ops::Deref;
 use std::boxed::Box;
 use std::sync::Arc;
@@ -14,12 +7,13 @@ use engine::world::*;
 use interface::camera::Camera;
 use render;
 
-use self::ncollide_math::Scalar;
-use self::nalgebra::{Rotation, Rot2, Vec1, RotationTo, Norm, Mat1};
-use self::ncollide_entities::shape::Cuboid;
-use self::nphysics::math::{Vector, Orientation, Point};
-use self::nphysics::object::{RigidBody, RigidBodyHandle};
-use self::num::Zero;
+use nalgebra::{self, Rotation, Rot2, Vec1, RotationTo, Norm, Mat1};
+use ncollide_entities::shape::Cuboid;
+use ncollide_math::Scalar;
+use nphysics;
+use nphysics::math::{Vector, Orientation, Point};
+use nphysics::object::{RigidBody, RigidBodyHandle};
+use num::Zero;
 
 // NOTE: For all objects that have their velocities changes manually, make sure to turn off the deactivation threshold.
 

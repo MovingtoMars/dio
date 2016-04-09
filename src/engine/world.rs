@@ -1,13 +1,11 @@
-extern crate nphysics2d as nphysics;
-extern crate num;
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use engine::entity;
 use engine::entity::Entity;
 
-use self::num::Zero;
+use nphysics;
+use num::Zero;
 
 pub struct WorldData {
     pub physics_world: nphysics::world::World<f32>,
@@ -83,9 +81,10 @@ impl World {
         self.entities.push(e);
     }
 
-    pub fn stop_time(&mut self, dur: f32) {
+    /// Returns true if sucessfully stops time, false otherwise.
+    pub fn stop_time(&mut self, dur: f32) -> bool {
         if self.data.time_stopped_until.is_some() {
-            return;
+            return false;
         }
 
         println!("[stop time]");
@@ -105,6 +104,8 @@ impl World {
                 e.get_body_handle().save_vel();
             }
         }
+
+        true
     }
 
     pub fn start_time(&mut self) {

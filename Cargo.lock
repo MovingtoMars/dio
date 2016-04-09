@@ -10,6 +10,7 @@ dependencies = [
  "nphysics2d 0.2.2 (git+https://github.com/MovingtoMars/nphysics.git)",
  "num 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "sdl2 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sdl2_mixer 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

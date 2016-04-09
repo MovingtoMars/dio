@@ -1,12 +1,10 @@
-extern crate gfx_device_gl;
-
 pub mod image;
 
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::cell::{RefCell, RefMut};
 
-use self::gfx_device_gl::*;
+use gfx_device_gl::*;
 
 pub struct MediaHandle {
     pub base_path: PathBuf,

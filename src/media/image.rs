@@ -1,10 +1,7 @@
-extern crate gfx_device_gl;
-extern crate piston_window;
-
 use std::path::PathBuf;
 
-use self::piston_window::*;
-use self::gfx_device_gl::Resources;
+use piston_window::*;
+use gfx_device_gl::Resources;
 
 use media::MediaHandle;
 

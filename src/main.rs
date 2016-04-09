@@ -4,11 +4,17 @@
 #[macro_use]
 extern crate lazy_static;
 
+extern crate rustc_serialize;
+
 extern crate piston_window;
 extern crate sdl2;
 extern crate sdl2_mixer;
 extern crate nphysics2d as nphysics;
 extern crate nalgebra;
+extern crate gfx_device_gl;
+extern crate ncollide_entities;
+extern crate ncollide_math;
+extern crate num;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -21,6 +27,7 @@ mod render;
 mod interface;
 mod media;
 mod audio;
+mod stat;
 
 use engine::entity;
 use engine::entity::Entity;
@@ -50,6 +57,8 @@ fn main() {
     audio::init();
 
     let opengl = OpenGL::V2_1;
+
+    let mut stats_handler = stat::Handler::new();
 
     let window: PistonWindow = WindowSettings::new("dio", [INIT_WIN_WIDTH, INIT_WIN_HEIGHT])
                                    .opengl(opengl)
@@ -84,9 +93,10 @@ fn main() {
     }
 
     'outer: for e in window {
+        let mut stats = stats_handler.get();
         match e.event {
             Option::Some(ref val) => {
-                if !process_event(&mut world, &mut cam, &val) {
+                if !process_event(&mut world, &mut cam, &val, &mut stats) {
                     break 'outer;
                 }
             }
@@ -94,7 +104,10 @@ fn main() {
         }
 
         render::render(&e, &cam, &mut world);
+        stats_handler.set(stats);
     }
+
+    stats_handler.finish();
 }
 
 fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
@@ -117,9 +130,10 @@ fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
 }
 
 // if returns false, exit event loop
-fn process_event(world: &mut World, cam: &mut Camera, event: &Event) -> bool {
+fn process_event(world: &mut World, cam: &mut Camera, event: &Event, stats: &mut stat::Stats) -> bool {
     if let &Event::Update(UpdateArgs{dt}) = event {
         world.update(dt as f32);
+        stats.total_game_time += dt;
         return true;
     }
 
@@ -138,21 +152,25 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Event) -> bool {
             },
             Input::Press(ref button) => match *button {
                 Button::Mouse(mbutton) => {
+                    stats.num_clicks += 1;
                     if mbutton == MouseButton::Left {
                         world.with_player(|world, p| spawn_knife(world, cam, p));
                     }
                 },
-                Button::Keyboard(key) => match key {
-                    Key::Q => return false,
-                    Key::A => world.with_player(|_, p| p.set_moving_left(true)),
-                    Key::D => world.with_player(|_, p| p.set_moving_right(true)),
-                    Key::Space => {
-                        world.with_player(|world, p| if p.touching_ground {
-                            p.jump(&mut world.data);
-                            p.touching_ground = false;
-                        });
+                Button::Keyboard(key) => {
+                    stats.num_key_presses += 1;
+                    match key {
+                        Key::Q => return false,
+                        Key::A => world.with_player(|_, p| p.set_moving_left(true)),
+                        Key::D => world.with_player(|_, p| p.set_moving_right(true)),
+                        Key::Space => {
+                            world.with_player(|world, p| if p.touching_ground {
+                                p.jump(&mut world.data);
+                                p.touching_ground = false;
+                            });
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 },
                 _ => {}
             },
@@ -161,7 +179,9 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Event) -> bool {
                     Key::A => world.with_player(|_, p| p.set_moving_left(false)),
                     Key::D => world.with_player(|_, p| p.set_moving_right(false)),
                     Key::Space => world.with_player(|world, p| p.release(&mut world.data)),
-                    Key::T => world.stop_time(5.0),
+                    Key::T => if world.stop_time(5.0) {
+                        stats.num_time_stops += 1;
+                    },
                     _ => {}
                 },
                 _ => {}
