@@ -6,6 +6,8 @@ extern crate nalgebra;
 extern crate num;
 
 use std::ops::Deref;
+use std::boxed::Box;
+use std::sync::Arc;
 
 use piston_window::*;
 use engine::world::*;
@@ -13,9 +15,9 @@ use interface::camera::Camera;
 use render;
 
 use self::ncollide_math::Scalar;
-use self::nalgebra::{Rotation, Rot2, Vec1, RotationTo, Norm};
+use self::nalgebra::{Rotation, Rot2, Vec1, RotationTo, Norm, Mat1};
 use self::ncollide_entities::shape::Cuboid;
-use self::nphysics::math::{Vector, Orientation};
+use self::nphysics::math::{Vector, Orientation, Point};
 use self::nphysics::object::{RigidBody, RigidBodyHandle};
 use self::num::Zero;
 
@@ -267,7 +269,10 @@ impl Player {
         let density = 500.0;
 
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
-        let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1, Some(BODY_MARGIN));
+        //let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1, Some(BODY_MARGIN));
+        let mut body = RigidBody::new(Arc::new(Box::new(shape)),
+                Some((density, Point::new(0.0, 0.0), Mat1::new(100000000000.0))),
+                0.2, 0.1, Some(BODY_MARGIN));
         body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
 
