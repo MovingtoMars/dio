@@ -142,7 +142,8 @@ pub struct Ground {
 impl Ground {
     pub fn new(world_data: &mut WorldData, x: f32, y: f32, hw: f32, hh: f32) -> Ground {
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
-        let mut body = RigidBody::new_static(shape, 0.2, 0.3, Some(BODY_MARGIN));
+        let mut body = RigidBody::new_static(shape, 0.2, 0.3);
+        body.set_margin(BODY_MARGIN);
         body.append_translation(&Vector::new(x, y));
         let handle = world_data.physics_world.add_body(body);
 
@@ -209,7 +210,8 @@ pub struct Crate {
 impl Crate {
     pub fn new(world_data: &mut WorldData, mat: CrateMaterial, x: f32, y: f32, hw: f32, hh: f32) -> Crate {
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
-        let mut body = RigidBody::new_dynamic(shape, mat.density(), mat.restitution(), 0.6, Some(BODY_MARGIN));
+        let mut body = RigidBody::new_dynamic(shape, mat.density(), mat.restitution(), 0.6);
+        body.set_margin(BODY_MARGIN);
         body.append_translation(&Vector::new(x, y));
 
         let handle = world_data.physics_world.add_body(body);
@@ -269,10 +271,10 @@ impl Player {
         let density = 500.0;
 
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
-        //let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1, Some(BODY_MARGIN));
         let mut body = RigidBody::new(Arc::new(Box::new(shape)),
                 Some((density, Point::new(0.0, 0.0), Mat1::new(100000000000.0))),
-                0.2, 0.1, Some(BODY_MARGIN));
+                0.2, 0.1);
+        body.set_margin(BODY_MARGIN);
         body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
 
@@ -422,7 +424,8 @@ impl Knife {
         };
 
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
-        let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1, Some(BODY_MARGIN));
+        let mut body = RigidBody::new_dynamic(shape, density, 0.2, 0.1);
+        body.set_margin(BODY_MARGIN);
         body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
         body.set_lin_vel(velocity);
