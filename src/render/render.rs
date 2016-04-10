@@ -41,7 +41,7 @@ pub fn fill_ellipse(win: &PistonWindow, cam: &Camera, colour: [f32; 4], cx: f32,
         let (cx, cy) = cam.pos_to_screen(cx, cy);
         let (hr, vr) = cam.pair_metres_to_pixels(hr, vr);
         let rect = [cx - hr, cy - vr, hr * 2.0, vr * 2.0];
-        let e = Ellipse{
+        let e = Ellipse {
             color: colour,
             border: None,
             resolution: 100,
@@ -59,6 +59,9 @@ pub fn fill_rectangle(win: &PistonWindow, cam: &Camera, colour: [f32; 4], x: f32
         let (zx, zy) = cam.pos_to_screen(x, y);
         let (w, h) = cam.pair_metres_to_pixels(w, h);
         let rect = [0.0, 0.0, w, h];
-        rectangle(colour, rect, c.transform.trans(zx, zy).rot_rad(rot as f64).trans(-w / 2.0, -h / 2.0), g);
+        rectangle(colour,
+                  rect,
+                  c.transform.trans(zx, zy).rot_rad(rot as f64).trans(-w / 2.0, -h / 2.0),
+                  g);
     });
 }

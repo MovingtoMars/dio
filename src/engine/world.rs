@@ -176,7 +176,9 @@ impl World {
         self.player.clone()
     }
 
-    pub fn with_player<F>(&mut self, mut func: F) where F: FnMut(&mut World, &mut entity::Player) {
+    pub fn with_player<F>(&mut self, mut func: F)
+        where F: FnMut(&mut World, &mut entity::Player)
+    {
         let p1 = self.get_player().unwrap();
         let mut pb = p1.borrow_mut();
         let p = pb.as_player().unwrap();

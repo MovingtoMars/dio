@@ -74,7 +74,9 @@ fn next_channel() -> Channel {
         });
     }
 
-    println!("Allocated more channels: old_len={} new_len={}", old_len, new_len);
+    println!("Allocated more channels: old_len={} new_len={}",
+             old_len,
+             new_len);
 
     channels[old_len].used = true;
     channels[old_len].chan

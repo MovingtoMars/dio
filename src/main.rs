@@ -83,13 +83,20 @@ fn main() {
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
-        let player =
-            Rc::new(RefCell::new(Box::new(Player::new(&mut world.data, 4.0, 6.0, 0.35, 0.95)) as Box<entity::Entity>));
+        let player = Rc::new(RefCell::new(Box::new(Player::new(&mut world.data, 4.0, 6.0, 0.35, 0.95)) as Box<entity::Entity>));
         world.push_entity(player.clone());
-        let block =
-            Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Wood, 5.0, 7.5, 0.5, 0.5)) as Box<entity::Entity>));
-        let block2 =
-            Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Steel, 5.0, 8.5, 0.5, 0.5)) as Box<entity::Entity>));
+        let block = Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data,
+                                                                     entity::CrateMaterial::Wood,
+                                                                     5.0,
+                                                                     7.5,
+                                                                     0.5,
+                                                                     0.5)) as Box<entity::Entity>));
+        let block2 = Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data,
+                                                                      entity::CrateMaterial::Steel,
+                                                                      5.0,
+                                                                      8.5,
+                                                                      0.5,
+                                                                      0.5)) as Box<entity::Entity>));
         world.push_entity(block);
         world.push_entity(block2);
         world.set_player(Option::Some(player));
@@ -141,56 +148,70 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Event, stats: &mut
     }
 
     match *event {
-        Event::Input(ref i) => match *i {
-            Input::Resize(w, h) => {
-                cam.win_w = w;
-                cam.win_h = h;
-            },
-            Input::Move(ref motion) => match *motion {
-                Motion::MouseCursor(x, y) => {
-                    cam.mouse_x = x;
-                    cam.mouse_y = y;
-                },
-                _ => {},
-            },
-            Input::Press(ref button) => match *button {
-                Button::Mouse(mbutton) => {
-                    stats.num_clicks += 1;
-                    if mbutton == MouseButton::Left {
-                        world.with_player(|world, p| spawn_knife(world, cam, p));
-                    }
-                },
-                Button::Keyboard(key) => {
-                    stats.num_key_presses += 1;
-                    match key {
-                        Key::Q => return false,
-                        Key::A => world.with_player(|_, p| p.set_moving_left(true)),
-                        Key::D => world.with_player(|_, p| p.set_moving_right(true)),
-                        Key::Space => {
-                            world.with_player(|world, p| if p.touching_ground {
-                                p.jump(&mut world.data);
-                                p.touching_ground = false;
-                            });
+        Event::Input(ref i) => {
+            match *i {
+                Input::Resize(w, h) => {
+                    cam.win_w = w;
+                    cam.win_h = h;
+                }
+                Input::Move(ref motion) => {
+                    match *motion {
+                        Motion::MouseCursor(x, y) => {
+                            cam.mouse_x = x;
+                            cam.mouse_y = y;
                         }
                         _ => {}
                     }
-                },
+                }
+                Input::Press(ref button) => {
+                    match *button {
+                        Button::Mouse(mbutton) => {
+                            stats.num_clicks += 1;
+                            if mbutton == MouseButton::Left {
+                                world.with_player(|world, p| spawn_knife(world, cam, p));
+                            }
+                        }
+                        Button::Keyboard(key) => {
+                            stats.num_key_presses += 1;
+                            match key {
+                                Key::Q => return false,
+                                Key::A => world.with_player(|_, p| p.set_moving_left(true)),
+                                Key::D => world.with_player(|_, p| p.set_moving_right(true)),
+                                Key::Space => {
+                                    world.with_player(|world, p| {
+                                        if p.touching_ground {
+                                            p.jump(&mut world.data);
+                                            p.touching_ground = false;
+                                        }
+                                    });
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Input::Release(ref button) => {
+                    match *button {
+                        Button::Keyboard(key) => {
+                            match key {
+                                Key::A => world.with_player(|_, p| p.set_moving_left(false)),
+                                Key::D => world.with_player(|_, p| p.set_moving_right(false)),
+                                Key::Space => world.with_player(|world, p| p.release(&mut world.data)),
+                                Key::T => {
+                                    if world.stop_time(5.0) {
+                                        stats.num_time_stops += 1;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 _ => {}
-            },
-            Input::Release(ref button) => match *button {
-                Button::Keyboard(key) => match key {
-                    Key::A => world.with_player(|_, p| p.set_moving_left(false)),
-                    Key::D => world.with_player(|_, p| p.set_moving_right(false)),
-                    Key::Space => world.with_player(|world, p| p.release(&mut world.data)),
-                    Key::T => if world.stop_time(5.0) {
-                        stats.num_time_stops += 1;
-                    },
-                    _ => {}
-                },
-                _ => {}
-            },
-            _ => {}
-        },
+            }
+        }
         _ => {}
     }
 

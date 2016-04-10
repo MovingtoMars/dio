@@ -48,8 +48,7 @@ impl Camera {
 
     pub fn pos_to_screen(&self, x: f32, y: f32) -> (f64, f64) {
         let (px, py) = self.pair_metres_to_pixels(x - self.x, y - self.y);
-        (px + (self.win_w / 2) as f64,
-         py + (self.win_h / 2) as f64)
+        (px + (self.win_w / 2) as f64, py + (self.win_h / 2) as f64)
     }
 
     pub fn screen_to_pos(&self, x: f64, y: f64) -> (f32, f32) {

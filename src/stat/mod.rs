@@ -34,9 +34,9 @@ impl Handler {
     /// Call finish() to join the thread.
     pub fn new() -> Handler {
         let file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(FILENAME);
+                       .read(true)
+                       .write(true)
+                       .open(FILENAME);
 
         let mut stats = Stats::default();
 
@@ -47,14 +47,15 @@ impl Handler {
                 stats = json::decode(&text).unwrap();
 
                 file
-            },
+            }
             Err(err) => {
                 if err.kind() == ErrorKind::NotFound {
                     let mut file = OpenOptions::new()
-                            .read(true)
-                            .write(true)
-                            .create(true)
-                            .open(FILENAME).unwrap();
+                                       .read(true)
+                                       .write(true)
+                                       .create(true)
+                                       .open(FILENAME)
+                                       .unwrap();
 
                     let encoded = json::encode(&stats).unwrap();
                     file.write_all(encoded.as_ref()).unwrap();
@@ -62,7 +63,7 @@ impl Handler {
                 } else {
                     panic!("Error loading {}: {}", FILENAME, err)
                 }
-            },
+            }
         };
 
         let (sender, receiver) = mpsc::channel::<Message>();
@@ -70,10 +71,12 @@ impl Handler {
         let child = thread::spawn(move || {
             loop {
                 let stats = match receiver.recv() {
-                    Ok(stats) => match stats {
-                        Message::Save(stats) => stats,
-                        Message::Finish => break,
-                    },
+                    Ok(stats) => {
+                        match stats {
+                            Message::Save(stats) => stats,
+                            Message::Finish => break,
+                        }
+                    }
                     Err(_) => break,
                 };
 

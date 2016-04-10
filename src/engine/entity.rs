@@ -32,7 +32,7 @@ pub struct TimeRigidBodyHandle<T: Scalar> {
 
 impl<T: Scalar> TimeRigidBodyHandle<T> {
     fn new(handle: RigidBodyHandle<T>) -> TimeRigidBodyHandle<T> {
-        TimeRigidBodyHandle{
+        TimeRigidBodyHandle {
             handle: handle,
             saved_lin_vel: None,
             saved_ang_vel: None,
@@ -156,7 +156,14 @@ impl Ground {
 impl Entity for Ground {
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h, self.get_rotation());
+        render::fill_rectangle(win,
+                               cam,
+                               [0.0, 1.0, 0.0, 1.0],
+                               x,
+                               y,
+                               w,
+                               h,
+                               self.get_rotation());
     }
 
     fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
@@ -237,7 +244,14 @@ impl Entity for Crate {
         };
 
         render::fill_rectangle(win, cam, c1, x, y, w, h, self.get_rotation());
-        render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8, self.get_rotation());
+        render::fill_rectangle(win,
+                               cam,
+                               c2,
+                               x + w * 0.1,
+                               y + h * 0.1,
+                               w * 0.8,
+                               h * 0.8,
+                               self.get_rotation());
     }
 
     fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
@@ -278,8 +292,9 @@ impl Player {
 
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let mut body = RigidBody::new(Arc::new(Box::new(shape)),
-                Some((density, Point::new(0.0, 0.0), Mat1::new(100000000000.0))),
-                0.2, 0.1);
+                                      Some((density, Point::new(0.0, 0.0), Mat1::new(100000000000.0))),
+                                      0.2,
+                                      0.1);
         body.set_margin(BODY_MARGIN);
         body.append_translation(&Vector::new(x, y));
         body.set_deactivation_threshold(None);
@@ -293,7 +308,7 @@ impl Player {
             moving_right: false,
             moving_left: false,
             touching_ground: false,
-            release_jump:true,
+            release_jump: true,
         }
     }
 
@@ -310,7 +325,7 @@ impl Player {
         let mut lvel = body.lin_vel();
         lvel.y = -6.0;
         body.set_lin_vel(lvel);
-        //body.on_ground = false;
+        // body.on_ground = false;
     }
 
     pub fn release(&mut self, world_data: &mut WorldData) {
@@ -333,7 +348,14 @@ const PLAYER_ACCELERATION: f32 = PLAYER_MAX_SPEED * 2.5;
 impl Entity for Player {
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.get_rotation());
+        render::fill_rectangle(win,
+                               cam,
+                               [1.0, 0.8, 0.1, 1.0],
+                               x,
+                               y,
+                               w,
+                               h,
+                               self.get_rotation());
     }
 
     fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
@@ -364,15 +386,15 @@ impl Entity for Player {
 
         let mut lvel = body.lin_vel();
 
-        //if body.on_ground {
-            self.touching_ground = true;
-            self.release_jump = true;
-        //}
+        // if body.on_ground {
+        self.touching_ground = true;
+        self.release_jump = true;
+        // }
 
         let mass = 1.0 / body.inv_mass();
         let lin_force = mass * PLAYER_ACCELERATION;
 
-        //if self.touching_ground // why??????
+        // if self.touching_ground // why??????
         {
             if self.moving_right == self.moving_left {
                 let neg = lvel.x < 0.0;
@@ -385,12 +407,12 @@ impl Entity for Player {
                     if lvel.norm() < PLAYER_MAX_SPEED {
                         body.append_lin_force(Vector::new(-lin_force, 0.0));
                     }
-                    //lvel.x = (lvel.x - PLAYER_ACCELERATION).max(-PLAYER_MAX_SPEED);
+                    // lvel.x = (lvel.x - PLAYER_ACCELERATION).max(-PLAYER_MAX_SPEED);
                 } else if self.moving_right {
                     if lvel.norm() < PLAYER_MAX_SPEED {
                         body.append_lin_force(Vector::new(lin_force, 0.0));
                     }
-                    //lvel.x = (lvel.x + PLAYER_ACCELERATION).min(PLAYER_MAX_SPEED);
+                    // lvel.x = (lvel.x + PLAYER_ACCELERATION).min(PLAYER_MAX_SPEED);
                 }
 
             }
@@ -428,7 +450,11 @@ impl Knife {
         // use angle = acos(v.u / (||v|| ||u||)), where u = [1, 0].
         let rot = if velocity.norm() > 0.0 {
             let angle = (velocity.x / velocity.norm()).acos();
-            if velocity.y < 0.0 { -angle } else { angle }
+            if velocity.y < 0.0 {
+                -angle
+            } else {
+                angle
+            }
         } else {
             0.0
         };
@@ -454,7 +480,14 @@ impl Knife {
 impl Entity for Knife {
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [0.3, 0.3, 0.3, 1.0], x, y, w, h, self.get_rotation());
+        render::fill_rectangle(win,
+                               cam,
+                               [0.3, 0.3, 0.3, 1.0],
+                               x,
+                               y,
+                               w,
+                               h,
+                               self.get_rotation());
     }
 
     fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
@@ -475,7 +508,5 @@ impl Entity for Knife {
         (cx - self.hw, cy - self.hh, self.hw * 2.0, self.hh * 2.0)
     }
 
-    fn update(&mut self, world_data: &mut WorldData, dt: f32) {
-
-    }
+    fn update(&mut self, world_data: &mut WorldData, dt: f32) {}
 }
