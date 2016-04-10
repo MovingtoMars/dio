@@ -59,6 +59,9 @@ fn main() {
     let opengl = OpenGL::V2_1;
 
     let mut stats_handler = stat::Handler::new();
+    let mut stats = stats_handler.get();
+    stats.num_startups += 1;
+    stats_handler.set(stats);
 
     let window: PistonWindow = WindowSettings::new("dio", [INIT_WIN_WIDTH, INIT_WIN_HEIGHT])
                                    .opengl(opengl)
