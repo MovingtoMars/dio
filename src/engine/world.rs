@@ -101,7 +101,7 @@ impl World {
             e.on_stop_time(&mut self.data);
 
             if e.as_player().is_none() {
-                e.get_body_handle().save_vel();
+                e.get_body_handle_mut().save_vel();
             }
         }
 
@@ -122,7 +122,7 @@ impl World {
             e.on_start_time(&mut self.data);
 
             if e.as_player().is_none() {
-                e.get_body_handle().restore_vel();
+                e.get_body_handle_mut().restore_vel();
             }
         }
     }
@@ -160,7 +160,7 @@ impl World {
                 let mut e = e.borrow_mut();
 
                 if e.as_player().is_none() {
-                    e.get_body_handle().update_saved_vel(dt);
+                    e.get_body_handle_mut().update_saved_vel(dt);
                 }
             }
         }

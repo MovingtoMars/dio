@@ -108,10 +108,10 @@ impl<T: Scalar> Deref for TimeRigidBodyHandle<T> {
     }
 }
 
-
 // TODO: get_aabb() and change get_bounding_box()
 pub trait Entity {
-    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32>;
+    fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32>;
+    fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32>;
     fn get_centre(&self) -> (f32, f32);
     fn get_bounding_box(&self) -> (f32, f32, f32, f32);
 
@@ -124,6 +124,10 @@ pub trait Entity {
 
     fn as_player(&mut self) -> Option<&mut Player> {
         Option::None
+    }
+
+    fn get_rotation(&self) -> f32 {
+        self.get_body_handle().borrow().position().rotation.rotation().x
     }
 }
 
@@ -152,11 +156,15 @@ impl Ground {
 impl Entity for Ground {
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
+        render::fill_rectangle(win, cam, [0.0, 1.0, 0.0, 1.0], x, y, w, h, self.get_rotation());
     }
 
-    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
+    fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
+    }
+
+    fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
+        &self.body_handle
     }
 
     fn get_centre(&self) -> (f32, f32) {
@@ -228,12 +236,16 @@ impl Entity for Crate {
             CrateMaterial::Wood => ([0.4, 0.2, 0.0, 1.0], [0.6, 0.3, 0.0, 1.0]),
         };
 
-        render::fill_rectangle(win, cam, c1, x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
-        render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8, self.body_handle.borrow_mut().position().rotation.rotation().x);
+        render::fill_rectangle(win, cam, c1, x, y, w, h, self.get_rotation());
+        render::fill_rectangle(win, cam, c2, x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8, self.get_rotation());
     }
 
-    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
+    fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
+    }
+
+    fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
+        &self.body_handle
     }
 
     fn get_centre(&self) -> (f32, f32) {
@@ -321,11 +333,15 @@ const PLAYER_ACCELERATION: f32 = PLAYER_MAX_SPEED * 2.5;
 impl Entity for Player {
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
+        render::fill_rectangle(win, cam, [1.0, 0.8, 0.1, 1.0], x, y, w, h, self.get_rotation());
     }
 
-    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
+    fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
+    }
+
+    fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
+        &self.body_handle
     }
 
     fn get_centre(&self) -> (f32, f32) {
@@ -438,11 +454,15 @@ impl Knife {
 impl Entity for Knife {
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera) {
         let (x, y, w, h) = self.get_bounding_box();
-        render::fill_rectangle(win, cam, [0.3, 0.3, 0.3, 1.0], x, y, w, h, self.body_handle.borrow_mut().position().rotation.rotation().x);
+        render::fill_rectangle(win, cam, [0.3, 0.3, 0.3, 1.0], x, y, w, h, self.get_rotation());
     }
 
-    fn get_body_handle(&mut self) -> &mut TimeRigidBodyHandle<f32> {
+    fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32> {
         &mut self.body_handle
+    }
+
+    fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
+        &self.body_handle
     }
 
     fn get_centre(&self) -> (f32, f32) {
