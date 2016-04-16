@@ -1,1 +1,6 @@
 target
+a.out
+main
+*.s
+*.o
+stats.*

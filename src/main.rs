@@ -1,10 +1,20 @@
 #![allow(dead_code)]
+#![allow(unused_variables)]
 
 #[macro_use]
 extern crate lazy_static;
+
+extern crate rustc_serialize;
+
 extern crate piston_window;
 extern crate sdl2;
 extern crate sdl2_mixer;
+extern crate nphysics2d as nphysics;
+extern crate nalgebra;
+extern crate gfx_device_gl;
+extern crate ncollide_entities;
+extern crate ncollide_math;
+extern crate num;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -15,11 +25,23 @@ use sdl2_mixer::{INIT_MP3, INIT_FLAC, INIT_MOD, INIT_FLUIDSYNTH, INIT_MODPLUG, I
 mod engine;
 mod render;
 mod interface;
-mod physics;
 mod media;
 mod audio;
+mod stat;
 
 use engine::entity;
+use engine::entity::Entity;
+use engine::world::*;
+use engine::entity::Player;
+
+use interface::camera::Camera;
+
+use nphysics::math::Vector;
+
+use nalgebra::Norm;
+
+const INIT_WIN_WIDTH: u32 = 800;
+const INIT_WIN_HEIGHT: u32 = 600;
 
 fn main() {
     let sdl = sdl2::init().unwrap();
@@ -36,7 +58,12 @@ fn main() {
 
     let opengl = OpenGL::V2_1;
 
-    let window: PistonWindow = WindowSettings::new("dio", [800, 600])
+    let mut stats_handler = stat::Handler::new();
+    let mut stats = stats_handler.get();
+    stats.num_startups += 1;
+    stats_handler.set(stats);
+
+    let window: PistonWindow = WindowSettings::new("dio", [INIT_WIN_WIDTH, INIT_WIN_HEIGHT])
                                    .opengl(opengl)
                                    .exit_on_esc(true)
                                    .samples(4)
@@ -44,9 +71,9 @@ fn main() {
                                    .build()
                                    .unwrap();
 
-    let mut world = Box::new(engine::world::World::new(engine::world::WorldData::new(14.0, 10.0)));
+    let mut world = Box::new(World::new(WorldData::new(14.0, 10.0)));
     let (cx, cy) = world.data.get_centre_pos();
-    let cam = interface::camera::Camera::new(cx, cy, 50.0);
+    let mut cam = Camera::new(cx, cy, INIT_WIN_WIDTH, INIT_WIN_HEIGHT, 50.0);
 
     // let media_handle = media::MediaHandle::new(window.factory.clone());
 
@@ -56,22 +83,30 @@ fn main() {
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
-        let player =
-            Rc::new(RefCell::new(Box::new(entity::Player::new(&mut world.data, 4.0, 6.0, 0.4, 0.95)) as Box<entity::Entity>));
+        let player = Rc::new(RefCell::new(Box::new(Player::new(&mut world.data, 4.0, 6.0, 0.35, 0.95)) as Box<entity::Entity>));
         world.push_entity(player.clone());
-        let block =
-            Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Wood, 5.0, 7.5, 0.5, 0.5)) as Box<entity::Entity>));
-        let block2 =
-            Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data, entity::CrateMaterial::Steel, 5.0, 8.5, 0.5, 0.5)) as Box<entity::Entity>));
+        let block = Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data,
+                                                                     entity::CrateMaterial::Wood,
+                                                                     5.0,
+                                                                     7.5,
+                                                                     0.5,
+                                                                     0.5)) as Box<entity::Entity>));
+        let block2 = Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data,
+                                                                      entity::CrateMaterial::Steel,
+                                                                      5.0,
+                                                                      8.5,
+                                                                      0.5,
+                                                                      0.5)) as Box<entity::Entity>));
         world.push_entity(block);
         world.push_entity(block2);
         world.set_player(Option::Some(player));
     }
 
     'outer: for e in window {
+        let mut stats = stats_handler.get();
         match e.event {
             Option::Some(ref val) => {
-                if !process_event(&mut world, &val) {
+                if !process_event(&mut world, &mut cam, &val, &mut stats) {
                     break 'outer;
                 }
             }
@@ -79,36 +114,76 @@ fn main() {
         }
 
         render::render(&e, &cam, &mut world);
+        stats_handler.set(stats);
     }
+
+    stats_handler.finish();
+}
+
+fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
+    let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
+    let (px, py) = player.get_centre();
+
+    let (_, _, w, h) = player.get_bounding_box();
+
+    let sx = if kx < px {
+        px - w * 0.8
+    } else {
+        px + w * 0.8
+    };
+    let sy = py - h * 0.16;
+
+    let vel = Vector::new(kx - sx, ky - sy).normalize() * entity::KNIFE_INIT_SPEED;
+
+    let knife = entity::Knife::new(&mut world.data, sx, sy, vel);
+    world.push_entity(Rc::new(RefCell::new(Box::new(knife))));
 }
 
 // if returns false, exit event loop
-fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
+fn process_event(world: &mut World, cam: &mut Camera, event: &Event, stats: &mut stat::Stats) -> bool {
+    if let &Event::Update(UpdateArgs{dt}) = event {
+        world.update(dt as f32);
+        stats.total_game_time += dt;
+        return true;
+    }
+
     match *event {
         Event::Input(ref i) => {
             match *i {
+                Input::Resize(w, h) => {
+                    cam.win_w = w;
+                    cam.win_h = h;
+                }
+                Input::Move(ref motion) => {
+                    match *motion {
+                        Motion::MouseCursor(x, y) => {
+                            cam.mouse_x = x;
+                            cam.mouse_y = y;
+                        }
+                        _ => {}
+                    }
+                }
                 Input::Press(ref button) => {
                     match *button {
-                        Button::Mouse(mbutton) => println!("{:?}", mbutton),
+                        Button::Mouse(mbutton) => {
+                            stats.num_clicks += 1;
+                            if mbutton == MouseButton::Left {
+                                world.with_player(|world, p| spawn_knife(world, cam, p));
+                            }
+                        }
                         Button::Keyboard(key) => {
+                            stats.num_key_presses += 1;
                             match key {
-                                Key::Q => {
-                                    return false;
-                                }
-                                Key::A => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_left(true);
-                                }
-                                Key::D => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_right(true);
-                                }
+                                Key::Q => return false,
+                                Key::A => world.with_player(|_, p| p.set_moving_left(true)),
+                                Key::D => world.with_player(|_, p| p.set_moving_right(true)),
                                 Key::Space => {
-                                    let p = world.get_player().unwrap();
-                                    if p.borrow_mut().as_player().unwrap().touching_ground {
-                                        p.borrow_mut().as_player().unwrap().jump(&mut world.data);
-                                        p.borrow_mut().as_player().unwrap().touching_ground = false;
-                                    }
+                                    world.with_player(|world, p| {
+                                        if p.touching_ground {
+                                            p.jump(&mut world.data);
+                                            p.touching_ground = false;
+                                        }
+                                    });
                                 }
                                 _ => {}
                             }
@@ -120,17 +195,13 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
                     match *button {
                         Button::Keyboard(key) => {
                             match key {
-                                Key::A => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_left(false);
-                                }
-                                Key::D => {
-                                    let p = world.get_player().unwrap();
-                                    p.borrow_mut().as_player().unwrap().set_moving_right(false);
-                                }
-                                Key::Space => {
-                                let p = world.get_player().unwrap();
-                                p.borrow_mut().as_player().unwrap().release(&mut world.data);
+                                Key::A => world.with_player(|_, p| p.set_moving_left(false)),
+                                Key::D => world.with_player(|_, p| p.set_moving_right(false)),
+                                Key::Space => world.with_player(|world, p| p.release(&mut world.data)),
+                                Key::T => {
+                                    if world.stop_time(5.0) {
+                                        stats.num_time_stops += 1;
+                                    }
                                 }
                                 _ => {}
                             }
@@ -140,9 +211,6 @@ fn process_event(world: &mut engine::world::World, event: &Event) -> bool {
                 }
                 _ => {}
             }
-        }
-        Event::Update(UpdateArgs{dt}) => {
-            world.update(dt);
         }
         _ => {}
     }
