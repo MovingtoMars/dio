@@ -28,6 +28,7 @@ mod interface;
 mod media;
 mod audio;
 mod stat;
+mod levels;
 
 use engine::entity;
 use engine::entity::Entity;
