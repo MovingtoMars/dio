@@ -10,9 +10,6 @@ use num::Zero;
 pub struct WorldData {
     pub physics_world: nphysics::world::World<f32>,
 
-    width: f32, // metres
-    height: f32, // metres
-
     current_time: f32, // seconds
 
     time_stopped_until: Option<f32>,
@@ -28,35 +25,17 @@ pub struct World {
 }
 
 impl WorldData {
-    pub fn new(width: f32, height: f32) -> WorldData {
+    pub fn new() -> WorldData {
         let mut physics_world = nphysics::world::World::new();
         let gravity = nphysics::math::Vector::new(0.0, 9.81);
         physics_world.set_gravity(gravity);
 
         WorldData {
             physics_world: physics_world,
-            width: width,
-            height: height,
             current_time: 0.0,
             time_stopped_until: None,
             gravity: gravity,
         }
-    }
-
-    pub fn get_dimensions(&self) -> (f32, f32) {
-        (self.width, self.height)
-    }
-
-    pub fn get_centre_pos(&self) -> (f32, f32) {
-        (self.width / 2.0, self.height / 2.0)
-    }
-
-    pub fn get_width(&self) -> f32 {
-        self.width
-    }
-
-    pub fn get_height(&self) -> f32 {
-        self.height
     }
 
     pub fn get_current_time(&self) -> f32 {

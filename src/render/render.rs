@@ -8,9 +8,7 @@ pub fn render(win: &PistonWindow, cam: &Camera, world: &mut World) {
     win.draw_2d(|c, g| {
         clear([0.0; 4], g);
 
-        let (zx, zy) = cam.pos_to_screen(0.0, 0.0);
-        let (w, h) = cam.pair_metres_to_pixels(world.data.get_width(), world.data.get_height());
-        rectangle([1.0; 4], [zx, zy, w, h], c.transform, g);
+        rectangle([1.0; 4], [0.0, 0.0, cam.win_w as f64, cam.win_h as f64], c.transform, g);
     });
 
     for e in world.get_entities_ref() {

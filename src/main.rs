@@ -72,30 +72,34 @@ fn main() {
                                    .build()
                                    .unwrap();
 
-    let mut world = Box::new(World::new(WorldData::new(14.0, 10.0)));
-    let (cx, cy) = world.data.get_centre_pos();
-    let mut cam = Camera::new(cx, cy, INIT_WIN_WIDTH, INIT_WIN_HEIGHT, 50.0);
+    let mut world = Box::new(World::new(WorldData::new()));
+    let mut cam = Camera::new(0.0, 0.0, INIT_WIN_WIDTH, INIT_WIN_HEIGHT, 50.0);
 
     // let media_handle = media::MediaHandle::new(window.factory.clone());
+    //
+    // (&levels::Level{
+    //     name: String::from("Test Level"),
+    //     player_start_pos: (1.0, 2.0),
+    // }).save(&media_handle, "default.level.json").unwrap();
 
     {
-        let gnd = entity::Ground::new(&mut world.data, 7.0, 9.5, 7.0, 0.5);
-        let gnd2 = entity::Ground::new(&mut world.data, 0.5, 5.0, 0.5, 5.0);
+        let gnd = entity::Ground::new(&mut world.data, 0.0, 4.5, 7.0, 0.5);
+        let gnd2 = entity::Ground::new(&mut world.data, -6.5, 0.0, 0.5, 5.0);
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
         world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
 
-        let player = Rc::new(RefCell::new(Box::new(Player::new(&mut world.data, 4.0, 6.0, 0.35, 0.95)) as Box<entity::Entity>));
+        let player = Rc::new(RefCell::new(Box::new(Player::new(&mut world.data, -3.0, 1.0, 0.35, 0.95)) as Box<entity::Entity>));
         world.push_entity(player.clone());
         let block = Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data,
                                                                      entity::CrateMaterial::Wood,
-                                                                     5.0,
-                                                                     7.5,
+                                                                     -2.0,
+                                                                     2.5,
                                                                      0.5,
                                                                      0.5)) as Box<entity::Entity>));
         let block2 = Rc::new(RefCell::new(Box::new(entity::Crate::new(&mut world.data,
                                                                       entity::CrateMaterial::Steel,
-                                                                      5.0,
-                                                                      8.5,
+                                                                      -2.0,
+                                                                      3.5,
                                                                       0.5,
                                                                       0.5)) as Box<entity::Entity>));
         world.push_entity(block);
