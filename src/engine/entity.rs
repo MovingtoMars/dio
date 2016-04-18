@@ -112,7 +112,6 @@ impl<T: Scalar> Deref for TimeRigidBodyHandle<T> {
 pub trait Entity {
     fn get_body_handle_mut(&mut self) -> &mut TimeRigidBodyHandle<f32>;
     fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32>;
-    fn get_centre(&self) -> (f32, f32);
     fn get_bounding_box(&self) -> (f32, f32, f32, f32);
 
     fn render(&self, physics_world: &nphysics::world::World<f32>, win: &PistonWindow, cam: &Camera);
@@ -128,6 +127,11 @@ pub trait Entity {
 
     fn get_rotation(&self) -> f32 {
         self.get_body_handle().borrow().position().rotation.rotation().x
+    }
+
+    fn get_centre(&self) -> (f32, f32) {
+        let trans = self.get_body_handle().borrow().position().translation;
+        (trans.x, trans.y)
     }
 }
 
@@ -172,11 +176,6 @@ impl Entity for Ground {
 
     fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
         &self.body_handle
-    }
-
-    fn get_centre(&self) -> (f32, f32) {
-        let trans = self.body_handle.borrow().position().translation;
-        (trans.x, trans.y)
     }
 
     fn get_bounding_box(&self) -> (f32, f32, f32, f32) {
@@ -260,11 +259,6 @@ impl Entity for Crate {
 
     fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
         &self.body_handle
-    }
-
-    fn get_centre(&self) -> (f32, f32) {
-        let trans = self.body_handle.borrow().position().translation;
-        (trans.x, trans.y)
     }
 
     fn get_bounding_box(&self) -> (f32, f32, f32, f32) {
@@ -364,11 +358,6 @@ impl Entity for Player {
 
     fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
         &self.body_handle
-    }
-
-    fn get_centre(&self) -> (f32, f32) {
-        let trans = self.body_handle.borrow().position().translation;
-        (trans.x, trans.y)
     }
 
     fn get_bounding_box(&self) -> (f32, f32, f32, f32) {
@@ -496,11 +485,6 @@ impl Entity for Knife {
 
     fn get_body_handle(&self) -> &TimeRigidBodyHandle<f32> {
         &self.body_handle
-    }
-
-    fn get_centre(&self) -> (f32, f32) {
-        let trans = self.body_handle.borrow().position().translation;
-        (trans.x, trans.y)
     }
 
     fn get_bounding_box(&self) -> (f32, f32, f32, f32) {
