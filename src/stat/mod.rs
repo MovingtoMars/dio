@@ -1,5 +1,5 @@
 use std::fs::OpenOptions;
-use std::io::{Read, Seek, SeekFrom, ErrorKind, Write};
+use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use std::sync::mpsc;
 use std::thread;
 
@@ -33,10 +33,7 @@ impl Handler {
     /// It then spawns a child thread to handle saving updated stats asynchronously via the set() method.
     /// Call finish() to join the thread.
     pub fn new() -> Handler {
-        let file = OpenOptions::new()
-                       .read(true)
-                       .write(true)
-                       .open(FILENAME);
+        let file = OpenOptions::new().read(true).write(true).open(FILENAME);
 
         let mut stats = Stats::default();
 
@@ -48,22 +45,20 @@ impl Handler {
 
                 file
             }
-            Err(err) => {
-                if err.kind() == ErrorKind::NotFound {
-                    let mut file = OpenOptions::new()
-                                       .read(true)
-                                       .write(true)
-                                       .create(true)
-                                       .open(FILENAME)
-                                       .unwrap();
+            Err(err) => if err.kind() == ErrorKind::NotFound {
+                let mut file = OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .create(true)
+                    .open(FILENAME)
+                    .unwrap();
 
-                    let encoded = json::encode(&stats).unwrap();
-                    file.write_all(encoded.as_ref()).unwrap();
-                    file
-                } else {
-                    panic!("Error loading {}: {}", FILENAME, err)
-                }
-            }
+                let encoded = json::encode(&stats).unwrap();
+                file.write_all(encoded.as_ref()).unwrap();
+                file
+            } else {
+                panic!("Error loading {}: {}", FILENAME, err)
+            },
         };
 
         let (sender, receiver) = mpsc::channel::<Message>();
@@ -71,12 +66,10 @@ impl Handler {
         let child = thread::spawn(move || {
             loop {
                 let stats = match receiver.recv() {
-                    Ok(stats) => {
-                        match stats {
-                            Message::Save(stats) => stats,
-                            Message::Finish => break,
-                        }
-                    }
+                    Ok(stats) => match stats {
+                        Message::Save(stats) => stats,
+                        Message::Finish => break,
+                    },
                     Err(_) => break,
                 };
 

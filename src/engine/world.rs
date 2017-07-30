@@ -71,7 +71,9 @@ impl World {
         let end_time = self.data.current_time + dur;
         self.data.time_stopped_until = Some(end_time);
 
-        self.data.physics_world.set_gravity(nphysics::math::Vector::zero());
+        self.data
+            .physics_world
+            .set_gravity(nphysics::math::Vector::zero());
 
         // TODO do this at start of world update
         for e in &mut self.entities {
@@ -156,7 +158,8 @@ impl World {
     }
 
     pub fn with_player<F>(&mut self, mut func: F)
-        where F: FnMut(&mut World, &mut entity::Player)
+    where
+        F: FnMut(&mut World, &mut entity::Player),
     {
         let p1 = self.get_player().unwrap();
         let mut pb = p1.borrow_mut();

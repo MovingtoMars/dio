@@ -63,9 +63,7 @@ impl Level {
         let mut full_path = media_handle.base_path.clone();
         full_path.push(&Path::new(path));
 
-        let mut file = try!(OpenOptions::new()
-                       .read(true)
-                       .open(full_path));
+        let mut file = try!(OpenOptions::new().read(true).open(full_path));
 
         let mut text = String::new();
         try!(file.read_to_string(&mut text));
@@ -81,11 +79,13 @@ impl Level {
         let mut full_path = media_handle.base_path.clone();
         full_path.push(&Path::new(path));
 
-        let mut file = try!(OpenOptions::new()
-                       .write(true)
-                       .truncate(true)
-                       .create(true)
-                       .open(full_path));
+        let mut file = try!(
+            OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(full_path)
+        );
 
         let text = try!(json::encode(self));
         try!(file.write_all(text.as_ref()));

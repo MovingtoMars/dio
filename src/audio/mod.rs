@@ -1,7 +1,7 @@
 extern crate sdl2;
 extern crate sdl2_mixer;
 
-use sdl2_mixer::{Chunk, Channel};
+use sdl2_mixer::{Channel, Chunk};
 
 use std::path::Path;
 
@@ -74,9 +74,11 @@ fn next_channel() -> Channel {
         });
     }
 
-    println!("Allocated more channels: old_len={} new_len={}",
-             old_len,
-             new_len);
+    println!(
+        "Allocated more channels: old_len={} new_len={}",
+        old_len,
+        new_len
+    );
 
     channels[old_len].used = true;
     channels[old_len].chan
@@ -91,7 +93,9 @@ impl Sound {
         let mut full_path = media_handle.base_path.clone();
         full_path.push(&Path::new(path));
 
-        Sound { chunk: Chunk::from_file(full_path.as_path()).unwrap() }
+        Sound {
+            chunk: Chunk::from_file(full_path.as_path()).unwrap(),
+        }
     }
 
     pub fn play(&self, loops: isize) {
