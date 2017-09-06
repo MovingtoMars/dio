@@ -1,89 +1,157 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use super::*;
 
-use engine::entity;
-use engine::entity::Entity;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::mem::uninitialized;
 
+use ncollide::shape::{Cuboid, ShapeHandle};
 use nphysics;
+use nphysics::math::{AngularInertia, Orientation, Point, Rotation, Vector};
+use nphysics::volumetric::Volumetric;
 use num::Zero;
 
-pub struct WorldData {
-    pub physics_world: nphysics::world::World<f32>,
+use chan;
+use specs::{self, Component, Entity, Join};
 
-    current_time: f32, // seconds
+pub type N = f32;
+pub type RigidBody = nphysics::object::RigidBody<N>;
+pub type RigidBodyHandle = nphysics::object::RigidBodyHandle<N>;
 
-    time_stopped_until: Option<f32>,
+pub const BODY_MARGIN: f32 = 0.04;
 
-    gravity: nphysics::math::Vector<f32>,
-}
+// TODO event system: entities aren't really added until events processed
 
 pub struct World {
-    pub data: WorldData,
+    specs_world: specs::World,
+    physics_thread: thread::JoinHandle<()>,
+    physics_thread_link: Arc<Mutex<PhysicsThreadLink>>,
+    next_rigid_body_id: u32,
+    player: Entity,
 
-    player: Option<Rc<RefCell<Box<entity::Entity>>>>,
-    entities: Vec<Rc<RefCell<Box<entity::Entity>>>>,
-}
-
-impl WorldData {
-    pub fn new() -> WorldData {
-        let mut physics_world = nphysics::world::World::new();
-        let gravity = nphysics::math::Vector::new(0.0, 9.81);
-        physics_world.set_gravity(gravity);
-
-        WorldData {
-            physics_world: physics_world,
-            current_time: 0.0,
-            time_stopped_until: None,
-            gravity: gravity,
-        }
-    }
-
-    pub fn get_current_time(&self) -> f32 {
-        self.current_time
-    }
+    time_stop_remaining: Option<f32>,
+    normal_gravity: Vector<N>,
 }
 
 impl World {
-    pub fn new(data: WorldData) -> World {
-        World {
-            data: data,
-            entities: Vec::new(),
-            player: Option::None,
+    pub fn new(x: f32, y: f32, hw: f32, hh: f32) -> Self {
+        let mut specs_world = specs::World::new();
+
+        macro_rules! register_components {
+            ($world:expr, $($comp:ty),* $(,)*) => {
+                $($world.register::<$comp>());+
+            }
         }
+
+        register_components! {
+            specs_world,
+            RigidBodyID,
+            Renderable,
+            Player,
+            TimeStopStore,
+        }
+
+        let (physics_thread_sender, recv) = chan::sync(0);
+        let (send, physics_thread_receiver) = chan::sync(0);
+
+        let gravity = nphysics::math::Vector::new(0.0, 9.81);
+        let physics_thread = thread::spawn(move || physics_thread_inner(gravity, recv, send));
+
+        let mut world = World {
+            specs_world,
+            next_rigid_body_id: 0,
+            physics_thread,
+            physics_thread_link: Arc::new(Mutex::new(PhysicsThreadLink {
+                send: physics_thread_sender,
+                recv: physics_thread_receiver,
+            })),
+            player: unsafe { uninitialized() },
+            time_stop_remaining: None,
+            normal_gravity: gravity,
+        };
+
+        world.player = world.new_player(x, y, hw, hh);
+
+        world
     }
 
-    pub fn get_entities_ref(&self) -> &Vec<Rc<RefCell<Box<entity::Entity>>>> {
-        &self.entities
+    pub fn physics_thread_link(&self) -> Arc<Mutex<PhysicsThreadLink>> {
+        self.physics_thread_link.clone()
     }
 
-    pub fn push_entity(&mut self, e: Rc<RefCell<Box<entity::Entity>>>) {
-        self.entities.push(e);
+    pub fn player_entity(&self) -> Entity {
+        self.player
+    }
+
+    pub fn player_rigid_body_id(&self) -> RigidBodyID {
+        let idc = self.read_component::<RigidBodyID>();
+        *idc.get(self.player).unwrap()
+    }
+
+    pub fn read_component<T: Component>(&self) -> specs::ReadStorage<T> {
+        self.specs_world.read::<T>()
+    }
+
+    pub fn tick(&mut self, time: f32) {
+        assert!(time > 0.0);
+
+        if self.time_stop_remaining.is_some() {
+            let body_id = self.player_rigid_body_id();
+            let physics = self.physics_thread_link.lock().unwrap();
+            let inv_mass = physics.get_inv_mass(body_id);
+            physics.apply_central_impulse(body_id, self.normal_gravity * (1.0 / inv_mass) * time);
+        }
+
+        self.physics_thread_link.lock().unwrap().step(time);
+
+        self.specs_world.maintain();
+
+        let context = SystemContext {
+            time,
+            physics_thread_link: self.physics_thread_link.clone(),
+            time_is_stopped: self.time_stop_remaining.is_some(),
+        };
+        self.specs_world.add_resource(context.clone());
+
+        let mut dispatcher = register_systems(specs::DispatcherBuilder::new()).build();
+        dispatcher.dispatch(&mut self.specs_world.res);
+
+        self.specs_world.maintain();
+
+        if let Some(t) = self.time_stop_remaining {
+            if time >= t {
+                self.start_time();
+            } else {
+                self.time_stop_remaining = Some(t - time);
+            }
+        }
     }
 
     /// Returns true if sucessfully stops time, false otherwise.
     pub fn stop_time(&mut self, dur: f32) -> bool {
-        if self.data.time_stopped_until.is_some() {
+        if self.time_stop_remaining.is_some() {
             return false;
         }
 
         println!("[stop time]");
 
-        let end_time = self.data.current_time + dur;
-        self.data.time_stopped_until = Some(end_time);
+        self.time_stop_remaining = Some(dur);
 
-        self.data
-            .physics_world
-            .set_gravity(nphysics::math::Vector::zero());
+        let physics = self.physics_thread_link.lock().unwrap();
+        physics.set_gravity(Vector::zero());
 
-        // TODO do this at start of world update
-        for e in &mut self.entities {
-            let mut e = e.borrow_mut();
+        let mut time_stop_storec = self.specs_world.write::<TimeStopStore>();
+        let rigid_body_idc = self.read_component::<RigidBodyID>();
 
-            e.on_stop_time(&mut self.data);
+        for (&body_id, store) in (&rigid_body_idc, &mut time_stop_storec).join() {
+            assert!(store.saved_lin_vel.is_none());
+            assert!(store.saved_ang_vel.is_none());
 
-            if e.as_player().is_none() {
-                e.get_body_handle_mut().save_vel();
-            }
+            // XXX what behavious do we want?
+            // store.saved_lin_vel = Some(physics.get_lin_vel(body_id));
+            // store.saved_ang_vel = Some(physics.get_ang_vel(body_id));
+            //
+            // physics.set_lin_vel(body_id, Vector::zero());
+            // physics.set_ang_vel(body_id, Orientation::zero());
         }
 
         true
@@ -92,78 +160,267 @@ impl World {
     pub fn start_time(&mut self) {
         println!("[start time]");
 
-        self.data.time_stopped_until = None;
+        self.time_stop_remaining = None;
 
-        self.data.physics_world.set_gravity(self.data.gravity);
+        let physics = self.physics_thread_link.lock().unwrap();
+        physics.set_gravity(self.normal_gravity);
 
-        // TODO do this at start of world update
-        for e in &mut self.entities {
-            let mut e = e.borrow_mut();
 
-            e.on_start_time(&mut self.data);
 
-            if e.as_player().is_none() {
-                e.get_body_handle_mut().restore_vel();
+        let mut time_stop_storec = self.specs_world.write::<TimeStopStore>();
+        let rigid_body_idc = self.read_component::<RigidBodyID>();
+
+        for (&body_id, store) in (&rigid_body_idc, &mut time_stop_storec).join() {
+            assert!(store.saved_ang_vel.is_none() == store.saved_lin_vel.is_none());
+
+            // use zero values if this body was created during time stop
+            let saved_lin_vel = store.saved_lin_vel.unwrap_or(Vector::zero());
+            let saved_ang_vel = store.saved_ang_vel.unwrap_or(Orientation::zero());
+
+            let cur_lin_vel = physics.get_lin_vel(body_id);
+            let cur_ang_vel = physics.get_ang_vel(body_id);
+
+            // XXX
+            // if store.saved_lin_vel.is_some() && !handle.is_active() {
+            // handle.activate(na::Bounded::max_value());
+            // }
+
+            physics.set_lin_vel(body_id, cur_lin_vel + saved_lin_vel);
+            physics.set_ang_vel(body_id, cur_ang_vel + saved_ang_vel);
+
+            store.saved_lin_vel = None;
+            store.saved_ang_vel = None;
+        }
+    }
+
+    fn new_rigid_body_id(&mut self) -> RigidBodyID {
+        let body_id = self.next_rigid_body_id;
+        self.next_rigid_body_id += 1;
+        RigidBodyID::new(body_id)
+    }
+
+    pub fn new_ground(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let id = self.new_rigid_body_id();
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            shape: ShapeHandle::new(shape),
+            mass_properties: None,
+            restitution: 0.2,
+            friction: 0.3,
+            translation: Vector::new(x, y),
+        };
+
+        self.physics_thread_link.lock().unwrap().send.send(message);
+
+        let renderable = Renderable {
+            color: [0.0, 1.0, 0.0, 1.0],
+            w: hw * 2.0,
+            h: hh * 2.0,
+            x,
+            y,
+            ..Renderable::default()
+        };
+
+        self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .build()
+    }
+
+    // Make sure to set world.player to the returned entity!
+    fn new_player(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let id = self.new_rigid_body_id();
+
+        let density = 500.0;
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            shape: ShapeHandle::new(shape),
+            mass_properties: Some((
+                density,
+                Point::new(0.0, 0.0),
+                AngularInertia::new(100000000000.0),
+            )),
+            restitution: 0.2,
+            friction: 0.1,
+            translation: Vector::new(x, y),
+        };
+
+        let player = Player::new();
+
+        self.physics_thread_link.lock().unwrap().send.send(message);
+
+        let renderable = Renderable {
+            color: [1.0, 0.8, 0.1, 1.0],
+            w: hw * 2.0,
+            h: hh * 2.0,
+            x,
+            y,
+            ..Renderable::default()
+        };
+
+        self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(player)
+            .build()
+    }
+
+    pub fn new_crate(&mut self, x: f32, y: f32, hw: f32, hh: f32, material: CrateMaterial) -> Entity {
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let id = self.new_rigid_body_id();
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            mass_properties: Some(shape.mass_properties(material.density())),
+            shape: ShapeHandle::new(shape),
+            restitution: material.restitution(),
+            friction: 0.6,
+            translation: Vector::new(x, y),
+        };
+
+        self.physics_thread_link.lock().unwrap().send.send(message);
+
+        let renderable = Renderable {
+            color: material.color().1,
+            w: hw * 2.0,
+            h: hh * 2.0,
+            x,
+            y,
+            ..Renderable::default()
+        };
+
+        self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(TimeStopStore::new())
+            .build()
+    }
+
+    pub fn new_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Entity {
+        let hw = 0.15;
+        let hh = 0.05;
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let id = self.new_rigid_body_id();
+
+        let density = 500.0;
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            mass_properties: Some(shape.mass_properties(density)),
+            shape: ShapeHandle::new(shape),
+            restitution: 0.2,
+            friction: 0.1,
+            translation: Vector::new(x, y),
+        };
+
+        let physics = self.physics_thread_link.lock().unwrap();
+        physics.send.send(message);
+        physics.set_lin_vel(id, velocity);
+        use num::Complex;
+        let rot = Rotation::from_complex(Complex {
+            re: velocity.x,
+            im: velocity.y,
+        });
+        physics.set_rotation(id, rot);
+
+        let renderable = Renderable {
+            color: [0.3, 0.3, 0.3, 1.0],
+            x,
+            y,
+            w: hw * 2.0,
+            h: hh * 2.0,
+            rotation: rot.angle(),
+            ..Renderable::default()
+        };
+
+        self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(TimeStopStore::new())
+            .build()
+    }
+
+
+    pub fn set_player_moving_left(&mut self, x: bool) {
+        self.specs_world
+            .write::<Player>()
+            .get_mut(self.player)
+            .unwrap()
+            .moving_left = x;
+    }
+
+    pub fn set_player_moving_right(&mut self, x: bool) {
+        self.specs_world
+            .write::<Player>()
+            .get_mut(self.player)
+            .unwrap()
+            .moving_right = x;
+    }
+
+    pub fn set_player_jumping(&mut self, jumping: bool) {
+        let mut playerc = self.specs_world.write::<Player>();
+        let player = playerc.get_mut(self.player).unwrap();
+        let idc = self.read_component::<RigidBodyID>();
+        let &body_id = idc.get(self.player).unwrap();
+
+        let physics = self.physics_thread_link.lock().unwrap();
+
+        if jumping {
+            player.touching_ground = true;
+            if player.touching_ground {
+                // player.jump(&mut world.data);
+                player.touching_ground = false;
+
+                let mut lvel = physics.get_lin_vel(body_id);
+                lvel.y = -6.0;
+                physics.set_lin_vel(body_id, lvel);
+                // body.on_ground = false;
             }
+        } else {
+            // let mut lvel = physics.get_lin_vel(body_id);
+            //
+            // if lvel.y < 0.0 && self.release_jump {
+            //     lvel.y *= 0.45;
+            //     physics.set_body_lin_vel(body_id, lvel);
+            //     self.release_jump = false;
+            // }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum CrateMaterial {
+    Steel,
+    Wood,
+}
+
+impl CrateMaterial {
+    pub fn density(self) -> N {
+        match self {
+            CrateMaterial::Steel => 8000.0,
+            CrateMaterial::Wood => 7000.0,
         }
     }
 
-    pub fn update(&mut self, dt: f32) {
-        assert!(dt > 0.0);
-
-        if let Some(t) = self.data.time_stopped_until {
-            if t <= self.data.current_time {
-                self.start_time();
-            }
+    pub fn restitution(self) -> N {
+        match self {
+            CrateMaterial::Steel => 0.6,
+            CrateMaterial::Wood => 0.4,
         }
-
-        if self.data.time_stopped_until.is_some() {
-            self.with_player(|w, p| {
-                let handle = p.get_body_handle();
-                let mut handle = handle.borrow_mut();
-                let inv_mass = handle.inv_mass();
-                handle.apply_central_impulse(w.data.gravity * (1.0 / inv_mass) * dt);
-            });
-        }
-
-        self.data.physics_world.step(dt);
-
-        for e in &mut self.entities {
-            e.borrow_mut().pre_update(&mut self.data);
-        }
-
-        for e in &mut self.entities {
-            e.borrow_mut().update(&mut self.data, dt);
-        }
-
-        if self.data.time_stopped_until.is_some() {
-            for e in &mut self.entities {
-                let mut e = e.borrow_mut();
-
-                if e.as_player().is_none() {
-                    e.get_body_handle_mut().update_saved_vel(dt);
-                }
-            }
-        }
-
-        self.data.current_time += dt;
     }
 
-    pub fn set_player(&mut self, player: Option<Rc<RefCell<Box<entity::Entity>>>>) {
-        self.player = player;
-    }
-
-    pub fn get_player(&mut self) -> Option<Rc<RefCell<Box<entity::Entity>>>> {
-        self.player.clone()
-    }
-
-    pub fn with_player<F>(&mut self, mut func: F)
-    where
-        F: FnMut(&mut World, &mut entity::Player),
-    {
-        let p1 = self.get_player().unwrap();
-        let mut pb = p1.borrow_mut();
-        let p = pb.as_player().unwrap();
-        func(self, p);
+    pub fn color(self) -> ([f32; 4], [f32; 4]) {
+        match self {
+            CrateMaterial::Steel => ([0.2, 0.2, 0.2, 1.0], [0.3, 0.3, 0.3, 1.0]),
+            CrateMaterial::Wood => ([0.4, 0.2, 0.0, 1.0], [0.6, 0.3, 0.0, 1.0]),
+        }
     }
 }

@@ -1,21 +1,19 @@
 [package]
 name = "dio"
 version = "0.1.0"
-authors = ["MovingtoMars <liam@bumblebee.net.nz>"]
+authors = ["MovingtoMars <definitelynotliam@gmail.com>"]
 
 [dependencies]
-piston_window = "0.67.0"
+chan = "*"
 gfx_device_gl = "*"
-sdl2_mixer = "*"
-sdl2 = "0.25"
 lazy_static = "*"
-ncollide_entities = "0.4"
-ncollide_math = "0.2"
-nalgebra = "0.6.0"
-num = "0.1"
+nalgebra = "*"
+ncollide = "*"
+nphysics2d = "*"
+num = "*"
+piston_window = "0.67.0"
+rodio = "*"
 rustc-serialize = "*"
-
-[dependencies.nphysics2d]
-#features = [ "f64" ]
-# path = "../nphysics"
-git = "https://github.com/MovingtoMars/nphysics.git"
+shred = "0.4"
+shred-derive = "*"
+specs = "0.9"

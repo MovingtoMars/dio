@@ -11,6 +11,7 @@ pub struct Stats {
     pub num_clicks: u64,
     pub num_key_presses: u64,
     pub num_startups: u64,
+    pub num_knives_spawned: u64,
     pub total_game_time: f64,
 }
 

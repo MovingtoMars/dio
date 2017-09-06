@@ -1,26 +1,23 @@
 #![allow(dead_code)]
+#![allow(unused_imports)]
 #![allow(unused_variables)]
 
-#[macro_use]
-extern crate lazy_static;
-
-extern crate rustc_serialize;
-
-extern crate piston_window;
-extern crate sdl2;
-extern crate sdl2_mixer;
-extern crate nphysics2d as nphysics;
-extern crate nalgebra;
+extern crate chan;
 extern crate gfx_device_gl;
-extern crate ncollide_entities;
-extern crate ncollide_math;
+extern crate nalgebra as na;
+extern crate ncollide;
+extern crate nphysics2d as nphysics;
 extern crate num;
-
-use std::cell::RefCell;
-use std::rc::Rc;
+extern crate piston_window;
+extern crate rodio;
+extern crate rustc_serialize;
+extern crate shred;
+#[macro_use]
+extern crate shred_derive;
+extern crate specs;
 
 use piston_window::*;
-use sdl2_mixer::{AUDIO_S16LSB, INIT_MP3, INIT_FLAC, INIT_FLUIDSYNTH, INIT_MOD, INIT_MODPLUG, INIT_OGG};
+use nphysics::math::Vector;
 
 mod engine;
 mod render;
@@ -30,33 +27,14 @@ mod audio;
 mod stat;
 mod levels;
 
-use engine::entity;
-use engine::entity::Entity;
-use engine::world::*;
-use engine::entity::Player;
+use engine::{CrateMaterial, World};
 
 use interface::camera::Camera;
-
-use nphysics::math::Vector;
-
-use nalgebra::Norm;
 
 const INIT_WIN_WIDTH: u32 = 800;
 const INIT_WIN_HEIGHT: u32 = 600;
 
 fn main() {
-    let sdl = sdl2::init().unwrap();
-    sdl.audio().unwrap();
-    // let mut timer = sdl.timer().unwrap();
-    sdl2_mixer::init(
-        INIT_MP3 | INIT_FLAC | INIT_MOD | INIT_FLUIDSYNTH | INIT_MODPLUG | INIT_OGG,
-    ).unwrap();
-    let frequency = 44100;
-    let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
-    let channels = 2; // Stereo
-    let chunk_size = 1024;
-    sdl2_mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
-
     audio::init();
 
     let opengl = OpenGL::V2_1;
@@ -74,84 +52,73 @@ fn main() {
                                    .build()
                                    .unwrap();
 
-    let mut world = Box::new(World::new(WorldData::new()));
+    let mut world = World::new(-3.0, 1.0, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT);
+
+    world.new_ground(0.0, 4.5, 7.0, 0.5);
+    world.new_ground(-6.5, 0.0, 0.5, 5.0);
+    world.new_crate(-2.0, 3.5, 0.5, 0.5, CrateMaterial::Steel);
+    world.new_crate(-2.0, 2.5, 0.5, 0.5, CrateMaterial::Wood);
+
     let mut cam = Camera::new(0.0, 0.0, INIT_WIN_WIDTH, INIT_WIN_HEIGHT, 50.0);
 
-    // let media_handle = media::MediaHandle::new(window.factory.clone());
+    let media_handle = media::MediaHandle::new(window.factory.clone());
     //
     // (&levels::Level{
     //     name: String::from("Test Level"),
     //     player_start_pos: (1.0, 2.0),
     // }).save(&media_handle, "default.level.json").unwrap();
 
-    {
-        let gnd = entity::Ground::new(&mut world.data, 0.0, 4.5, 7.0, 0.5);
-        let gnd2 = entity::Ground::new(&mut world.data, -6.5, 0.0, 0.5, 5.0);
-        world.push_entity(Rc::new(RefCell::new(Box::new(gnd))));
-        world.push_entity(Rc::new(RefCell::new(Box::new(gnd2))));
-
-        let player = Rc::new(RefCell::new(Box::new(
-            Player::new(&mut world.data, -3.0, 1.0, 0.35, 0.95),
-        ) as Box<entity::Entity>));
-        world.push_entity(player.clone());
-        let block = Rc::new(RefCell::new(Box::new(entity::Crate::new(
-            &mut world.data,
-            entity::CrateMaterial::Wood,
-            -2.0,
-            2.5,
-            0.5,
-            0.5,
-        )) as Box<entity::Entity>));
-        let block2 = Rc::new(RefCell::new(Box::new(entity::Crate::new(
-            &mut world.data,
-            entity::CrateMaterial::Steel,
-            -2.0,
-            3.5,
-            0.5,
-            0.5,
-        )) as Box<entity::Entity>));
-        world.push_entity(block);
-        world.push_entity(block2);
-        world.set_player(Option::Some(player));
-    }
+    window.set_ups(60);
 
     'outer: while let Some(e) = window.next() {
         let mut stats = stats_handler.get();
-        if !process_event(&mut world, &mut cam, &e, &mut stats) {
+        if !process_event(&mut world, &mut window, &mut cam, &e, &mut stats) {
             break 'outer;
         }
 
-        render::render(&mut window, &cam, &mut world, &e);
         stats_handler.set(stats);
     }
 
     stats_handler.finish();
 }
 
-fn spawn_knife(world: &mut World, cam: &mut Camera, player: &mut Player) {
+pub const KNIFE_INIT_SPEED: f32 = 14.0;
+const PLAYER_HALF_WIDTH: f32 = 0.35;
+const PLAYER_HALF_HEIGHT: f32 = 0.95;
+
+fn spawn_knife(world: &mut World, cam: &mut Camera) {
     let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
-    let (px, py) = player.get_centre();
 
-    let (_, _, w, h) = player.get_bounding_box();
+    let physics = world.physics_thread_link();
+    let (px, py) = physics
+        .lock()
+        .unwrap()
+        .get_position(world.player_rigid_body_id());
 
-    let sx = if kx < px { px - w * 0.8 } else { px + w * 0.8 };
-    let sy = py - h * 0.16;
+    let sx = if kx < px {
+        px - PLAYER_HALF_WIDTH * 1.6
+    } else {
+        px + PLAYER_HALF_WIDTH * 1.6
+    };
+    let sy = py - PLAYER_HALF_HEIGHT * 0.32;
 
-    let vel = Vector::new(kx - sx, ky - sy).normalize() * entity::KNIFE_INIT_SPEED;
+    let vel = Vector::new(kx - sx, ky - sy).normalize() * KNIFE_INIT_SPEED;
 
-    let knife = entity::Knife::new(&mut world.data, sx, sy, vel);
-    world.push_entity(Rc::new(RefCell::new(Box::new(knife))));
+    world.new_knife(sx, sy, vel);
 }
 
 // if returns false, exit event loop
-fn process_event(world: &mut World, cam: &mut Camera, event: &Input, stats: &mut stat::Stats) -> bool {
+fn process_event(world: &mut World, window: &mut piston_window::PistonWindow, cam: &mut Camera, event: &Input, stats: &mut stat::Stats) -> bool {
     if let &Input::Update(UpdateArgs { dt }) = event {
-        world.update(dt as f32);
+        world.tick(dt as f32);
         stats.total_game_time += dt;
         return true;
     }
 
     match *event {
+        Input::Render(_) => {
+            render::render(window, cam, world, event);
+        }
         Input::Resize(w, h) => {
             cam.win_w = w;
             cam.win_h = h;
@@ -167,21 +134,17 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Input, stats: &mut
             Button::Mouse(mbutton) => {
                 stats.num_clicks += 1;
                 if mbutton == MouseButton::Left {
-                    world.with_player(|world, p| spawn_knife(world, cam, p));
+                    stats.num_knives_spawned += 1;
+                    spawn_knife(world, cam);
                 }
             }
             Button::Keyboard(key) => {
                 stats.num_key_presses += 1;
                 match key {
                     Key::Q => return false,
-                    Key::A => world.with_player(|_, p| p.set_moving_left(true)),
-                    Key::D => world.with_player(|_, p| p.set_moving_right(true)),
-                    Key::Space => {
-                        world.with_player(|world, p| if p.touching_ground {
-                            p.jump(&mut world.data);
-                            p.touching_ground = false;
-                        });
-                    }
+                    Key::A => world.set_player_moving_left(true),
+                    Key::D => world.set_player_moving_right(true),
+                    Key::Space | Key::W => world.set_player_jumping(true),
                     _ => {}
                 }
             }
@@ -189,9 +152,9 @@ fn process_event(world: &mut World, cam: &mut Camera, event: &Input, stats: &mut
         },
         Input::Release(ref button) => match *button {
             Button::Keyboard(key) => match key {
-                Key::A => world.with_player(|_, p| p.set_moving_left(false)),
-                Key::D => world.with_player(|_, p| p.set_moving_right(false)),
-                Key::Space => world.with_player(|world, p| p.release(&mut world.data)),
+                Key::A => world.set_player_moving_left(false),
+                Key::D => world.set_player_moving_right(false),
+                Key::Space | Key::W => world.set_player_jumping(false),
                 Key::T => if world.stop_time(5.0) {
                     stats.num_time_stops += 1;
                 },

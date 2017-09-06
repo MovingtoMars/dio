@@ -1,6 +1,7 @@
 use piston_window::*;
 
-use engine::world::World;
+use engine::World;
+use engine::Renderable;
 use interface::camera::Camera;
 use media;
 
@@ -16,9 +17,19 @@ pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &I
         );
     });
 
-    for e in world.get_entities_ref() {
-        e.borrow_mut()
-            .render(&world.data.physics_world, win, input, cam);
+    use specs::Join;
+    for renderable in world.read_component::<Renderable>().join() {
+        //
+        let &Renderable {
+            x,
+            y,
+            w,
+            h,
+            rotation,
+            color,
+        } = renderable;
+
+        fill_rectangle(win, input, cam, color, x, y, w, h, rotation);
     }
 }
 
