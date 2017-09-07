@@ -36,16 +36,23 @@ pub struct Player {
     pub moving_left: bool,
     pub touching_ground: bool,
     pub release_jump: bool,
+
+    sensor_id: SensorID,
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(sensor_id: SensorID) -> Self {
         Player {
             moving_right: false,
             moving_left: false,
             touching_ground: false,
             release_jump: false,
+            sensor_id,
         }
+    }
+
+    pub fn sensor_id(&self) -> SensorID {
+        self.sensor_id
     }
 }
 

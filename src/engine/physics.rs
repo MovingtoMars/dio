@@ -2,12 +2,12 @@ use super::*;
 
 use std::collections::HashMap;
 
-use na::Isometry2;
 use na::geometry::Translation;
 use ncollide::shape::ShapeHandle;
 use ncollide::bounding_volume::{HasBoundingVolume, AABB};
 use nphysics;
-use nphysics::math::{AngularInertia, Orientation, Point, Vector};
+use nphysics::math::{AngularInertia, Isometry, Orientation, Point, Vector};
+use nphysics::object::{Sensor, SensorCollisionGroups};
 
 use chan;
 
@@ -86,13 +86,30 @@ impl PhysicsThreadLink {
     pub fn set_gravity(&self, g: Vector<N>) {
         self.send.send(SetGravity(g));
     }
+
+    pub fn add_sensor(&self, id: SensorID, shape: ShapeHandle<Point<N>, Isometry<N>>, parent: Option<RigidBodyID>, rel_pos: Option<Isometry<N>>) {
+        self.send.send(AddSensor {
+            id,
+            shape,
+            parent,
+            rel_pos,
+        });
+    }
+
+    pub fn get_bodies_intersecting_sensor(&self, id: SensorID) -> Vec<RigidBodyID> {
+        self.send.send(GetBodiesIntersectingSensor(id));
+        self.recv
+            .recv()
+            .unwrap()
+            .unwrap_bodies_intersecting_sensor()
+    }
 }
 
 pub enum MessageToPhysicsThread {
     Step(N),
     AddRigidBody {
         id: RigidBodyID,
-        shape: ShapeHandle<Point<N>, Isometry2<N>>,
+        shape: ShapeHandle<Point<N>, Isometry<N>>,
         mass_properties: Option<(N, Point<N>, AngularInertia<N>)>,
         restitution: N,
         friction: N,
@@ -112,6 +129,14 @@ pub enum MessageToPhysicsThread {
     ClearLinForce(RigidBodyID),
     SetGravity(Vector<N>),
     ApplyCentralImpulse(RigidBodyID, Vector<N>),
+
+    AddSensor {
+        id: SensorID,
+        shape: ShapeHandle<Point<N>, Isometry<N>>,
+        parent: Option<RigidBodyID>,
+        rel_pos: Option<Isometry<N>>,
+    },
+    GetBodiesIntersectingSensor(SensorID),
 }
 
 pub enum MessageFromPhysicsThread {
@@ -121,6 +146,7 @@ pub enum MessageFromPhysicsThread {
     LinVel(Vector<N>),
     AngVel(Orientation<N>),
     InvMass(N),
+    BodiesIntersectingSensor(Vec<RigidBodyID>),
 }
 
 impl MessageFromPhysicsThread {
@@ -165,6 +191,13 @@ impl MessageFromPhysicsThread {
             _ => panic!("Expected InvMass"),
         }
     }
+
+    pub fn unwrap_bodies_intersecting_sensor(self) -> Vec<RigidBodyID> {
+        match self {
+            BodiesIntersectingSensor(x) => x,
+            _ => panic!("Expected BodiesIntersectingSensor"),
+        }
+    }
 }
 
 pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPhysicsThread>, send: chan::Sender<MessageFromPhysicsThread>) {
@@ -172,6 +205,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
     physics_world.set_gravity(gravity);
 
     let mut rigid_body_id_map = HashMap::new();
+    let mut sensor_map = HashMap::new();
 
     macro_rules! body {
         ($map:expr, $id:expr) => {$map.get(&$id).unwrap().borrow()}
@@ -199,7 +233,14 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 body.set_margin(BODY_MARGIN);
                 body.set_translation(Translation::from_vector(translation));
                 body.set_deactivation_threshold(None); // XXX
-                rigid_body_id_map.insert(id, physics_world.add_rigid_body(body));
+                body.set_user_data(Some(Box::new(id)));
+
+                let mut cg = *body.collision_groups();
+                cg.enable_interaction_with_sensors();
+                body.set_collision_groups(cg);
+
+                let bh = physics_world.add_rigid_body(body);
+                rigid_body_id_map.insert(id, bh);
             }
 
             GetHalfExtents(id) => {
@@ -274,6 +315,44 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
             ApplyCentralImpulse(id, x) => {
                 let mut body = body_mut!(rigid_body_id_map, id);
                 body.apply_central_impulse(x);
+            }
+
+            AddSensor {
+                id,
+                shape,
+                parent,
+                rel_pos,
+            } => {
+                let mut sensor = Sensor::new_with_shared_shape(
+                    shape,
+                    parent.map(|id| rigid_body_id_map.get(&id).unwrap().clone()),
+                );
+                if let Some(rel_pos) = rel_pos {
+                    sensor.set_relative_position(rel_pos);
+                }
+                sensor.collision_groups_mut().enable_interaction_with_static();
+                sensor.enable_interfering_bodies_collection();
+
+                sensor_map.insert(id, physics_world.add_sensor(sensor));
+            }
+
+            GetBodiesIntersectingSensor(id) => {
+                let sensor = sensor_map.get(&id).unwrap().borrow();
+                let interfering_bodies = sensor.interfering_bodies();
+
+                send.send(BodiesIntersectingSensor(
+                    interfering_bodies
+                        .unwrap()
+                        .into_iter()
+                        .map(|body| {
+                            *body.borrow()
+                                .user_data()
+                                .unwrap()
+                                .downcast_ref::<RigidBodyID>()
+                                .unwrap()
+                        })
+                        .collect(),
+                ));
             }
         }
     }

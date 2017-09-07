@@ -80,14 +80,12 @@ impl<'a> specs::System<'a> for PlayerSystem {
         let physics = data.c.physics_thread_link.lock().unwrap();
 
         for (&body_id, player) in (&data.rigidbodyidc, &mut data.playerc).join() {
+            player.touching_ground = !physics.get_bodies_intersecting_sensor(player.sensor_id()).is_empty();
+
             physics.clear_lin_force(body_id);
 
             let mut lvel = physics.get_lin_vel(body_id);
 
-            // if body.on_ground {
-            player.touching_ground = true;
-            player.release_jump = true;
-            // }
 
             let mass = 1.0 / physics.get_inv_mass(body_id);
             let lin_force = mass * PLAYER_ACCELERATION;

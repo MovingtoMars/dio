@@ -6,7 +6,7 @@ use std::mem::uninitialized;
 
 use ncollide::shape::{Cuboid, ShapeHandle};
 use nphysics;
-use nphysics::math::{AngularInertia, Orientation, Point, Rotation, Vector};
+use nphysics::math::{AngularInertia, Isometry, Orientation, Point, Rotation, Translation, Vector};
 use nphysics::volumetric::Volumetric;
 use num::Zero;
 
@@ -21,11 +21,31 @@ pub const BODY_MARGIN: f32 = 0.04;
 
 // TODO event system: entities aren't really added until events processed
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub struct SensorID(u32);
+
+struct Counter {
+    next: u32,
+}
+
+impl Counter {
+    pub fn new() -> Self {
+        Counter { next: 1 }
+    }
+
+    pub fn next(&mut self) -> u32 {
+        let x = self.next;
+        self.next += 1;
+        x
+    }
+}
+
 pub struct World {
     specs_world: specs::World,
     physics_thread: thread::JoinHandle<()>,
     physics_thread_link: Arc<Mutex<PhysicsThreadLink>>,
-    next_rigid_body_id: u32,
+    next_rigid_body_id: Counter,
+    next_sensor_id: Counter,
     player: Entity,
 
     time_stop_remaining: Option<f32>,
@@ -58,7 +78,8 @@ impl World {
 
         let mut world = World {
             specs_world,
-            next_rigid_body_id: 0,
+            next_rigid_body_id: Counter::new(),
+            next_sensor_id: Counter::new(),
             physics_thread,
             physics_thread_link: Arc::new(Mutex::new(PhysicsThreadLink {
                 send: physics_thread_sender,
@@ -194,9 +215,11 @@ impl World {
     }
 
     fn new_rigid_body_id(&mut self) -> RigidBodyID {
-        let body_id = self.next_rigid_body_id;
-        self.next_rigid_body_id += 1;
-        RigidBodyID::new(body_id)
+        RigidBodyID::new(self.next_rigid_body_id.next())
+    }
+
+    fn new_sensor_id(&mut self) -> SensorID {
+        SensorID(self.next_sensor_id.next())
     }
 
     pub fn new_ground(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
@@ -250,9 +273,27 @@ impl World {
             translation: Vector::new(x, y),
         };
 
-        let player = Player::new();
 
-        self.physics_thread_link.lock().unwrap().send.send(message);
+        let sensor_id = self.new_sensor_id();
+        let sensor_height = 0.05;
+        let sensor_shape = Cuboid::new(Vector::new(hw * 0.99, sensor_height));
+        let rel_pos = Isometry::from_parts(
+            Translation::from_vector(Vector::new(0.0, hh + sensor_height)),
+            Rotation::from_angle(0.0),
+        );
+
+        {
+            let physics = self.physics_thread_link.lock().unwrap();
+            physics.send.send(message);
+            physics.add_sensor(
+                sensor_id,
+                ShapeHandle::new(sensor_shape),
+                Some(id),
+                Some(rel_pos),
+            );
+        }
+
+        let player = Player::new(sensor_id);
 
         let renderable = Renderable {
             color: [1.0, 0.8, 0.1, 1.0],
@@ -374,7 +415,6 @@ impl World {
         let physics = self.physics_thread_link.lock().unwrap();
 
         if jumping {
-            player.touching_ground = true;
             if player.touching_ground {
                 // player.jump(&mut world.data);
                 player.touching_ground = false;
@@ -382,7 +422,6 @@ impl World {
                 let mut lvel = physics.get_lin_vel(body_id);
                 lvel.y = -6.0;
                 physics.set_lin_vel(body_id, lvel);
-                // body.on_ground = false;
             }
         } else {
             // let mut lvel = physics.get_lin_vel(body_id);

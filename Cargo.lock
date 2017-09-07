@@ -7,7 +7,7 @@ dependencies = [
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ncollide 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "nphysics2d 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nphysics2d 0.7.1 (git+https://github.com/MovingtoMars/nphysics.git)",
  "num 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.67.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rodio 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -774,7 +774,7 @@ dependencies = [
 [[package]]
 name = "nphysics2d"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/nphysics.git#99b929cf92a16c05d34de829d1bf63b3819f7311"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1576,7 +1576,7 @@ dependencies = [
 "checksum ncollide_transformation 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "348a4684b4e409f0e4b9d649afa4460a09fcefc6083113a1483008db8ada8845"
 "checksum ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2b0bf88903f5ee3f6e1c2a86e3aaff81d8fb4315ee4ccb52ff70cdd0fdbf0425"
 "checksum nodrop 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "52cd74cd09beba596430cc6e3091b74007169a56246e1262f0ba451ea95117b2"
-"checksum nphysics2d 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e31a57db433dcb9ce6d0b5a46ce1f1288df2436ba98b5816f0766c72afbaa7e7"
+"checksum nphysics2d 0.7.1 (git+https://github.com/MovingtoMars/nphysics.git)" = "<none>"
 "checksum num 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "a311b77ebdc5dd4cf6449d81e4135d9f0e3b153839ac90e648a8ef538f923525"
 "checksum num-bigint 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "8fd0f8dbb4c0960998958a796281d88c16fbe68d87b1baa6f31e2979e81fd0bd"
 "checksum num-complex 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "503e668405c5492d67cf662a81e05be40efe2e6bcf10f7794a07bd9865e704e6"
