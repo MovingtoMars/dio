@@ -345,8 +345,8 @@ impl World {
     }
 
     pub fn new_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Entity {
-        let hw = 0.15;
-        let hh = 0.05;
+        let hw = 0.18;
+        let hh = 0.08;
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
