@@ -8,6 +8,7 @@ use ncollide::bounding_volume::{HasBoundingVolume, AABB};
 use nphysics;
 use nphysics::math::{AngularInertia, Isometry, Orientation, Point, Vector};
 use nphysics::object::{Sensor, SensorCollisionGroups};
+use specs::Entity;
 
 use chan;
 
@@ -96,12 +97,21 @@ impl PhysicsThreadLink {
         });
     }
 
-    pub fn get_bodies_intersecting_sensor(&self, id: SensorID) -> Vec<RigidBodyID> {
+    pub fn get_bodies_intersecting_sensor(&self, id: SensorID) -> Vec<UserData> {
         self.send.send(GetBodiesIntersectingSensor(id));
         self.recv
             .recv()
             .unwrap()
             .unwrap_bodies_intersecting_sensor()
+    }
+
+    pub fn get_contacts(&self) -> Vec<Contact> {
+        self.send.send(GetContacts);
+        self.recv.recv().unwrap().unwrap_contacts()
+    }
+
+    pub fn remove_rigid_body(&self, id: RigidBodyID) {
+        self.send.send(RemoveRigidBody(id));
     }
 }
 
@@ -109,12 +119,14 @@ pub enum MessageToPhysicsThread {
     Step(N),
     AddRigidBody {
         id: RigidBodyID,
+        entity: Entity,
         shape: ShapeHandle<Point<N>, Isometry<N>>,
         mass_properties: Option<(N, Point<N>, AngularInertia<N>)>,
         restitution: N,
         friction: N,
         translation: Vector<N>,
     },
+    RemoveRigidBody(RigidBodyID),
     GetPosition(RigidBodyID),
     GetHalfExtents(RigidBodyID), // XXX rename GetBoundingHalfExtents
     GetRotation(RigidBodyID),
@@ -137,6 +149,8 @@ pub enum MessageToPhysicsThread {
         rel_pos: Option<Isometry<N>>,
     },
     GetBodiesIntersectingSensor(SensorID),
+
+    GetContacts,
 }
 
 pub enum MessageFromPhysicsThread {
@@ -146,7 +160,8 @@ pub enum MessageFromPhysicsThread {
     LinVel(Vector<N>),
     AngVel(Orientation<N>),
     InvMass(N),
-    BodiesIntersectingSensor(Vec<RigidBodyID>),
+    BodiesIntersectingSensor(Vec<UserData>),
+    Contacts(Vec<Contact>),
 }
 
 impl MessageFromPhysicsThread {
@@ -192,10 +207,17 @@ impl MessageFromPhysicsThread {
         }
     }
 
-    pub fn unwrap_bodies_intersecting_sensor(self) -> Vec<RigidBodyID> {
+    pub fn unwrap_bodies_intersecting_sensor(self) -> Vec<UserData> {
         match self {
             BodiesIntersectingSensor(x) => x,
             _ => panic!("Expected BodiesIntersectingSensor"),
+        }
+    }
+
+    pub fn unwrap_contacts(self) -> Vec<Contact> {
+        match self {
+            Contacts(x) => x,
+            _ => panic!("Expected Contacts"),
         }
     }
 }
@@ -223,6 +245,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
             AddRigidBody {
                 id,
+                entity,
                 shape,
                 mass_properties,
                 restitution,
@@ -233,7 +256,10 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 body.set_margin(BODY_MARGIN);
                 body.set_translation(Translation::from_vector(translation));
                 body.set_deactivation_threshold(None); // XXX
-                body.set_user_data(Some(Box::new(id)));
+                body.set_user_data(Some(Box::new(UserData {
+                    rigid_body_id: id,
+                    entity,
+                })));
 
                 let mut cg = *body.collision_groups();
                 cg.enable_interaction_with_sensors();
@@ -241,6 +267,15 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
                 let bh = physics_world.add_rigid_body(body);
                 rigid_body_id_map.insert(id, bh);
+            }
+
+            RemoveRigidBody(id) => {
+                let bh = rigid_body_id_map.remove(&id);
+                if let Some(bh) = bh {
+                    physics_world.remove_rigid_body(&bh);
+                } else {
+                    // XXX
+                }
             }
 
             GetHalfExtents(id) => {
@@ -330,7 +365,9 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 if let Some(rel_pos) = rel_pos {
                     sensor.set_relative_position(rel_pos);
                 }
-                sensor.collision_groups_mut().enable_interaction_with_static();
+                sensor
+                    .collision_groups_mut()
+                    .enable_interaction_with_static();
                 sensor.enable_interfering_bodies_collection();
 
                 sensor_map.insert(id, physics_world.add_sensor(sensor));
@@ -348,12 +385,66 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                             *body.borrow()
                                 .user_data()
                                 .unwrap()
-                                .downcast_ref::<RigidBodyID>()
+                                .downcast_ref::<UserData>()
                                 .unwrap()
                         })
                         .collect(),
                 ));
             }
+
+            GetContacts => {
+                let contacts = physics_world
+                    .collision_world()
+                    .contacts()
+                    .into_iter()
+                    .map(|(obj1, obj2, contact)| {
+                        Contact {
+                            obj1: *obj1.data
+                                .borrow_rigid_body()
+                                .user_data()
+                                .unwrap()
+                                .downcast_ref::<UserData>()
+                                .unwrap(),
+                            obj2: *obj2.data
+                                .borrow_rigid_body()
+                                .user_data()
+                                .unwrap()
+                                .downcast_ref::<UserData>()
+                                .unwrap(),
+
+                            depth: contact.depth,
+                            normal: contact.normal,
+                        }
+                    })
+                    .collect();
+
+                send.send(Contacts(contacts));
+            }
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct UserData {
+    pub rigid_body_id: RigidBodyID,
+    pub entity: Entity,
+}
+
+#[derive(Debug, Clone)]
+pub struct Contact {
+    pub obj1: UserData,
+    pub obj2: UserData,
+    pub normal: Vector<N>,
+    pub depth: N,
+}
+
+impl Contact {
+    pub fn flip(mut self) -> Self {
+        use std;
+        std::mem::swap(&mut self.obj1, &mut self.obj2);
+
+        self.normal = self.normal * -1.0;
+
+        self
     }
 }

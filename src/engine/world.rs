@@ -3,6 +3,7 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::mem::uninitialized;
+use std::collections::HashMap;
 
 use ncollide::shape::{Cuboid, ShapeHandle};
 use nphysics;
@@ -56,19 +57,7 @@ impl World {
     pub fn new(x: f32, y: f32, hw: f32, hh: f32) -> Self {
         let mut specs_world = specs::World::new();
 
-        macro_rules! register_components {
-            ($world:expr, $($comp:ty),* $(,)*) => {
-                $($world.register::<$comp>());+
-            }
-        }
-
-        register_components! {
-            specs_world,
-            RigidBodyID,
-            Renderable,
-            Player,
-            TimeStopStore,
-        }
+        register_components(&mut specs_world);
 
         let (physics_thread_sender, recv) = chan::sync(0);
         let (send, physics_thread_receiver) = chan::sync(0);
@@ -112,6 +101,10 @@ impl World {
         self.specs_world.read::<T>()
     }
 
+    pub fn entities(&self) -> specs::Fetch<specs::EntitiesRes> {
+        self.specs_world.entities()
+    }
+
     pub fn tick(&mut self, time: f32) {
         assert!(time > 0.0);
 
@@ -123,6 +116,20 @@ impl World {
         }
 
         self.physics_thread_link.lock().unwrap().step(time);
+        let contacts = self.physics_thread_link.lock().unwrap().get_contacts();
+
+        let mut contact_map = HashMap::new();
+
+        for contact in contacts {
+            contact_map
+                .entry(contact.obj1.rigid_body_id)
+                .or_insert_with(|| Vec::new())
+                .push(contact.clone());
+            contact_map
+                .entry(contact.obj2.rigid_body_id)
+                .or_insert_with(|| Vec::new())
+                .push(contact.flip());
+        }
 
         self.specs_world.maintain();
 
@@ -130,6 +137,7 @@ impl World {
             time,
             physics_thread_link: self.physics_thread_link.clone(),
             time_is_stopped: self.time_stop_remaining.is_some(),
+            contact_map,
         };
         self.specs_world.add_resource(context.clone());
 
@@ -226,42 +234,73 @@ impl World {
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
+        let renderable = Renderable::new(x, y, 0.0).with(RenderItem::rectangle(
+            0.0,
+            0.0,
+            hw * 2.0,
+            hh * 2.0,
+            0.0,
+            [0.0, 1.0, 0.0, 1.0],
+        ));
+
+        let entity = self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .build();
+
         let message = MessageToPhysicsThread::AddRigidBody {
             id,
+            entity,
             shape: ShapeHandle::new(shape),
             mass_properties: None,
             restitution: 0.2,
             friction: 0.3,
             translation: Vector::new(x, y),
         };
-
         self.physics_thread_link.lock().unwrap().send.send(message);
 
-        let renderable = Renderable {
-            color: [0.0, 1.0, 0.0, 1.0],
-            w: hw * 2.0,
-            h: hh * 2.0,
-            x,
-            y,
-            ..Renderable::default()
-        };
-
-        self.specs_world
-            .create_entity()
-            .with(id)
-            .with(renderable)
-            .build()
+        entity
     }
 
     // Make sure to set world.player to the returned entity!
     fn new_player(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
+        let sensor_id = self.new_sensor_id();
 
         let density = 500.0;
 
+        let player = Player::new(sensor_id);
+
+        let renderable = Renderable::new(x, y, 0.0)
+            .with(RenderItem::rectangle(
+                0.0,
+                0.0,
+                hw * 2.0,
+                hh * 2.0,
+                0.0,
+                [1.0, 0.8, 0.1, 1.0],
+            ))
+            .with(RenderItem::text(
+                0.0,
+                -hh * 1.5,
+                0.0,
+                [0.0, 0.0, 0.0, 1.0],
+                "Player",
+                16,
+            ));
+
+        let entity = self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(player)
+            .build();
+
         let message = MessageToPhysicsThread::AddRigidBody {
             id,
+            entity,
             shape: ShapeHandle::new(shape),
             mass_properties: Some((
                 density,
@@ -274,9 +313,8 @@ impl World {
         };
 
 
-        let sensor_id = self.new_sensor_id();
         let sensor_height = 0.05;
-        let sensor_shape = Cuboid::new(Vector::new(hw * 0.99, sensor_height));
+        let sensor_shape = Cuboid::new(Vector::new(hw * 0.90, sensor_height));
         let rel_pos = Isometry::from_parts(
             Translation::from_vector(Vector::new(0.0, hh + sensor_height)),
             Rotation::from_angle(0.0),
@@ -293,31 +331,41 @@ impl World {
             );
         }
 
-        let player = Player::new(sensor_id);
-
-        let renderable = Renderable {
-            color: [1.0, 0.8, 0.1, 1.0],
-            w: hw * 2.0,
-            h: hh * 2.0,
-            x,
-            y,
-            ..Renderable::default()
-        };
-
-        self.specs_world
-            .create_entity()
-            .with(id)
-            .with(renderable)
-            .with(player)
-            .build()
+        entity
     }
 
     pub fn new_crate(&mut self, x: f32, y: f32, hw: f32, hh: f32, material: CrateMaterial) -> Entity {
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
+        let renderable = Renderable::new(x, y, 0.0)
+            .with(RenderItem::rectangle(
+                0.0,
+                0.0,
+                hw * 2.0,
+                hh * 2.0,
+                0.0,
+                material.color().0,
+            ))
+            .with(RenderItem::rectangle(
+                0.0,
+                0.0,
+                hw * 1.6,
+                hh * 1.6,
+                0.0,
+                material.color().1,
+            ));
+
+        let entity = self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(TimeStopStore::new())
+            .build();
+
         let message = MessageToPhysicsThread::AddRigidBody {
             id,
+            entity,
             mass_properties: Some(shape.mass_properties(material.density())),
             shape: ShapeHandle::new(shape),
             restitution: material.restitution(),
@@ -327,21 +375,52 @@ impl World {
 
         self.physics_thread_link.lock().unwrap().send.send(message);
 
-        let renderable = Renderable {
-            color: material.color().1,
-            w: hw * 2.0,
-            h: hh * 2.0,
-            x,
-            y,
-            ..Renderable::default()
-        };
+        entity
+    }
 
-        self.specs_world
+    pub fn new_enemy(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let id = self.new_rigid_body_id();
+
+        let density = 500.0;
+
+        let renderable = Renderable::new(x, y, 0.0)
+            .with(RenderItem::rectangle(
+                0.0,
+                0.0,
+                hw * 2.0,
+                hh * 2.0,
+                0.0,
+                [0.0, 0.0, 1.0, 1.0],
+            ))
+            .with(RenderItem::hitpoints(
+                0.0,
+                -hh * 1.3,
+                0.0,
+                [0.0, 0.0, 0.0, 1.0],
+            ));
+
+        let entity = self.specs_world
             .create_entity()
             .with(id)
             .with(renderable)
             .with(TimeStopStore::new())
-            .build()
+            .with(Hitpoints::new(5))
+            .build();
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            entity,
+            mass_properties: Some(shape.mass_properties(density)),
+            shape: ShapeHandle::new(shape),
+            restitution: 0.2,
+            friction: 0.3,
+            translation: Vector::new(x, y),
+        };
+
+        self.physics_thread_link.lock().unwrap().send.send(message);
+
+        entity
     }
 
     pub fn new_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Entity {
@@ -352,8 +431,31 @@ impl World {
 
         let density = 500.0;
 
+        use num::Complex;
+        let rot = Rotation::from_complex(Complex {
+            re: velocity.x,
+            im: velocity.y,
+        });
+        let renderable = Renderable::new(x, y, rot.angle()).with(RenderItem::rectangle(
+            0.0,
+            0.0,
+            hw * 2.0,
+            hh * 2.0,
+            0.0,
+            [0.3, 0.3, 0.3, 1.0],
+        ));
+
+        let entity = self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(TimeStopStore::new())
+            .with(Knife)
+            .build();
+
         let message = MessageToPhysicsThread::AddRigidBody {
             id,
+            entity,
             mass_properties: Some(shape.mass_properties(density)),
             shape: ShapeHandle::new(shape),
             restitution: 0.2,
@@ -364,29 +466,9 @@ impl World {
         let physics = self.physics_thread_link.lock().unwrap();
         physics.send.send(message);
         physics.set_lin_vel(id, velocity);
-        use num::Complex;
-        let rot = Rotation::from_complex(Complex {
-            re: velocity.x,
-            im: velocity.y,
-        });
         physics.set_rotation(id, rot);
 
-        let renderable = Renderable {
-            color: [0.3, 0.3, 0.3, 1.0],
-            x,
-            y,
-            w: hw * 2.0,
-            h: hh * 2.0,
-            rotation: rot.angle(),
-            ..Renderable::default()
-        };
-
-        self.specs_world
-            .create_entity()
-            .with(id)
-            .with(renderable)
-            .with(TimeStopStore::new())
-            .build()
+        entity
     }
 
 

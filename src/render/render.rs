@@ -1,11 +1,13 @@
 use piston_window::*;
+use piston_window::character::CharacterCache;
+use specs::{self, Join};
 
 use engine::World;
-use engine::Renderable;
+use engine::{Hitpoints, RenderItem, RenderItemKind, Renderable};
 use interface::camera::Camera;
-use media;
+use media::*;
 
-pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &Input) {
+pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &Input, fonts: &mut Fonts) {
     win.draw_2d(input, |c, g| {
         clear([0.0; 4], g);
 
@@ -17,31 +19,86 @@ pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &I
         );
     });
 
-    use specs::Join;
-    for renderable in world.read_component::<Renderable>().join() {
-        //
-        let &Renderable {
-            x,
-            y,
-            w,
-            h,
-            rotation,
-            color,
-        } = renderable;
+    for (entity, renderable) in (&*world.entities(), &world.read_component::<Renderable>()).join() {
+        let x = renderable.x;
+        let y = renderable.y;
+        let rotation = renderable.rotation;
 
-        fill_rectangle(win, input, cam, color, x, y, w, h, rotation);
+        for item in &renderable.items {
+            let &RenderItem {
+                rel_x,
+                rel_y,
+                rel_rotation,
+                color,
+                ..
+            } = item;
+
+            if rel_rotation != 0.0 {
+                eprintln!("Relative rendering rotations don't work yet!");
+            }
+
+            let abs_x = x + rel_x;
+            let abs_y = y + rel_y;
+
+            match item.kind {
+                RenderItemKind::Rectangle { w, h } => {
+                    fill_rectangle(win, input, cam, color, abs_x, abs_y, w, h, rotation);
+                }
+                RenderItemKind::Text { ref text, size } => {
+                    draw_text(
+                        win,
+                        input,
+                        cam,
+                        fonts,
+                        color,
+                        abs_x,
+                        abs_y,
+                        size,
+                        rotation,
+                        x,
+                        y,
+                        &text,
+                    );
+                }
+                RenderItemKind::Hitpoints => {
+                    let hitpointsc = world.read_component::<Hitpoints>();
+                    let hp = hitpointsc.get(entity).unwrap();
+
+                    draw_text(
+                        win,
+                        input,
+                        cam,
+                        fonts,
+                        color,
+                        abs_x,
+                        abs_y,
+                        14,
+                        rotation,
+                        x,
+                        y,
+                        &format!("{}/{}", hp.current(), hp.max()),
+                    );
+                }
+            }
+        }
+    }
+}
+
+pub struct Fonts {
+    pub regular: FontHandle,
+    pub bold: FontHandle,
+}
+
+impl Fonts {
+    pub fn new(media: &MediaHandle) -> Self {
+        let regular = FontHandle::new(media, "NotoSans-unhinted/NotoSans-Regular.ttf");
+        let bold = FontHandle::new(media, "NotoSans-unhinted/NotoSans-Bold.ttf");
+        Fonts { regular, bold }
     }
 }
 
 // arrays are in [x, y, w, h] format
-pub fn render_image(
-    win: &mut PistonWindow,
-    input: &Input,
-    cam: &Camera,
-    image_tex: &media::image::ImageHandle,
-    target: [f32; 4],
-    source: Option<[f64; 4]>,
-) {
+pub fn render_image(win: &mut PistonWindow, input: &Input, cam: &Camera, image_tex: &ImageHandle, target: [f32; 4], source: Option<[f64; 4]>) {
     let image_bounds = Image {
         color: None,
         rectangle: Some(cam.array_pos_to_screen(target)),
@@ -74,11 +131,12 @@ pub fn fill_ellipse(win: &mut PistonWindow, input: &Input, cam: &Camera, colour:
     });
 }
 
-pub fn fill_rectangle(win: &mut PistonWindow, input: &Input, cam: &Camera, colour: [f32; 4], x: f32, y: f32, w: f32, h: f32, rot: f32) {
-    let (x, y, w, h) = { (x + w / 2.0, y + h / 2.0, w, h) };
+// TODO support for origin coords
+pub fn fill_rectangle(win: &mut PistonWindow, input: &Input, cam: &Camera, colour: [f32; 4], cx: f32, cy: f32, w: f32, h: f32, rot: f32) {
+    // let (x, y, w, h) = { (x + w / 2.0, y + h / 2.0, w, h) };
 
     win.draw_2d(input, |c, g| {
-        let (zx, zy) = cam.pos_to_screen(x, y);
+        let (zx, zy) = cam.pos_to_screen(cx, cy);
         let (w, h) = cam.pair_metres_to_pixels(w, h);
         let rect = [0.0, 0.0, w, h];
         rectangle(
@@ -88,6 +146,42 @@ pub fn fill_rectangle(win: &mut PistonWindow, input: &Input, cam: &Camera, colou
                 .trans(zx, zy)
                 .rot_rad(rot as f64)
                 .trans(-w / 2.0, -h / 2.0),
+            g,
+        );
+    });
+}
+
+// TODO make inputs a struct
+/// origin coords are used as origin for rotation
+pub fn draw_text(
+    win: &mut PistonWindow,
+    input: &Input,
+    cam: &Camera,
+    fonts: &mut Fonts,
+    colour: [f32; 4],
+    cx: f32,
+    cy: f32,
+    size: u32,
+    rot: f32,
+    origin_x: f32,
+    origin_y: f32,
+    text_: &str,
+) {
+    win.draw_2d(input, |c, g| {
+        let (zx, zy) = cam.pos_to_screen(cx, cy);
+        let (origin_zx, origin_zy) = cam.pos_to_screen(origin_x, origin_y);
+        let width = fonts.bold.glyphs.width(size, text_);
+
+        text(
+            colour,
+            size,
+            text_,
+            &mut fonts.bold.glyphs,
+            c.transform
+                .trans(origin_zx, origin_zy)
+                .rot_rad(rot as f64)
+                .trans(zx - origin_zx, zy - origin_zy)
+                .trans(-width / 2.0, 0.0),
             g,
         );
     });

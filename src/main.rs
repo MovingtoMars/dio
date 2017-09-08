@@ -31,6 +31,8 @@ use engine::{CrateMaterial, World};
 
 use interface::camera::Camera;
 
+use std::collections::HashSet;
+
 const INIT_WIN_WIDTH: u32 = 800;
 const INIT_WIN_HEIGHT: u32 = 600;
 
@@ -58,10 +60,12 @@ fn main() {
     world.new_ground(-6.5, 0.0, 0.5, 5.0);
     world.new_crate(-2.0, 3.5, 0.5, 0.5, CrateMaterial::Steel);
     world.new_crate(-2.0, 2.5, 0.5, 0.5, CrateMaterial::Wood);
+    world.new_enemy(2.0, 2.5, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT);
 
     let mut cam = Camera::new(0.0, 0.0, INIT_WIN_WIDTH, INIT_WIN_HEIGHT, 50.0);
 
     let media_handle = media::MediaHandle::new(window.factory.clone());
+    let mut fonts = render::Fonts::new(&media_handle);
     //
     // (&levels::Level{
     //     name: String::from("Test Level"),
@@ -70,10 +74,26 @@ fn main() {
 
     window.set_ups(60);
 
+    let mut keys_down = HashSet::new();
+
     'outer: while let Some(e) = window.next() {
         let mut stats = stats_handler.get();
-        if !process_event(&mut world, &mut window, &mut cam, &e, &mut stats) {
+        if !process_event(
+            &mut world,
+            &mut window,
+            &mut cam,
+            &e,
+            &mut stats,
+            &mut fonts,
+            &mut keys_down,
+        ) {
             break 'outer;
+        }
+
+        if keys_down.contains(&Key::Space) || keys_down.contains(&Key::W) {
+            world.set_player_jumping(true);
+        } else {
+            world.set_player_jumping(false);
         }
 
         stats_handler.set(stats);
@@ -108,7 +128,15 @@ fn spawn_knife(world: &mut World, cam: &mut Camera) {
 }
 
 // if returns false, exit event loop
-fn process_event(world: &mut World, window: &mut piston_window::PistonWindow, cam: &mut Camera, event: &Input, stats: &mut stat::Stats) -> bool {
+fn process_event(
+    world: &mut World,
+    window: &mut piston_window::PistonWindow,
+    cam: &mut Camera,
+    event: &Input,
+    stats: &mut stat::Stats,
+    fonts: &mut render::Fonts,
+    keys_down: &mut HashSet<Key>,
+) -> bool {
     if let &Input::Update(UpdateArgs { dt }) = event {
         world.tick(dt as f32);
         stats.total_game_time += dt;
@@ -117,7 +145,7 @@ fn process_event(world: &mut World, window: &mut piston_window::PistonWindow, ca
 
     match *event {
         Input::Render(_) => {
-            render::render(window, cam, world, event);
+            render::render(window, cam, world, event, fonts);
         }
         Input::Resize(w, h) => {
             cam.win_w = w;
@@ -140,26 +168,30 @@ fn process_event(world: &mut World, window: &mut piston_window::PistonWindow, ca
             }
             Button::Keyboard(key) => {
                 stats.num_key_presses += 1;
+                keys_down.insert(key);
+
                 match key {
                     Key::Q => return false,
                     Key::A => world.set_player_moving_left(true),
                     Key::D => world.set_player_moving_right(true),
-                    Key::Space | Key::W => world.set_player_jumping(true),
                     _ => {}
                 }
             }
             _ => {}
         },
         Input::Release(ref button) => match *button {
-            Button::Keyboard(key) => match key {
-                Key::A => world.set_player_moving_left(false),
-                Key::D => world.set_player_moving_right(false),
-                Key::Space | Key::W => world.set_player_jumping(false),
-                Key::T => if world.stop_time(5.0) {
-                    stats.num_time_stops += 1;
-                },
-                _ => {}
-            },
+            Button::Keyboard(key) => {
+                keys_down.remove(&key);
+
+                match key {
+                    Key::A => world.set_player_moving_left(false),
+                    Key::D => world.set_player_moving_right(false),
+                    Key::T => if world.stop_time(5.0) {
+                        stats.num_time_stops += 1;
+                    },
+                    _ => {}
+                }
+            }
             _ => {}
         },
         _ => {}

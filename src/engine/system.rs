@@ -1,10 +1,10 @@
 use super::*;
 
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 use specs::{self, Join};
 use nphysics::math::{Orientation, Rotation, Vector};
 use num::Zero;
-
 
 pub type RS<'a, T> = specs::ReadStorage<'a, T>;
 pub type WS<'a, T> = specs::WriteStorage<'a, T>;
@@ -14,6 +14,7 @@ pub struct SystemContext {
     pub time: f32,
     pub physics_thread_link: Arc<Mutex<PhysicsThreadLink>>,
     pub time_is_stopped: bool,
+    pub contact_map: HashMap<RigidBodyID, Vec<Contact>>,
 }
 
 pub fn register_systems<'a, 'b>(d: specs::DispatcherBuilder<'a, 'b>) -> specs::DispatcherBuilder<'a, 'b> {
@@ -24,9 +25,11 @@ pub fn register_systems<'a, 'b>(d: specs::DispatcherBuilder<'a, 'b>) -> specs::D
     );
     let d = d.add(PlayerSystem, "PlayerSystem", &[]);
     let d = d.add(TimeStopSystem, "TimeStopSystem", &[]);
+    let d = d.add(KnifeSystem, "KnifeSystem", &[]);
 
+    let d = d.add_barrier();
 
-    // let d = d.add_barrier();
+    let d = d.add(RemoveSystem, "RemoveSystem", &[]);
 
     d
 }
@@ -44,14 +47,14 @@ struct UpdateRenderableFromRigidBodyIDSystem;
 impl<'a> specs::System<'a> for UpdateRenderableFromRigidBodyIDSystem {
     type SystemData = UpdateRenderableFromRigidBodyIDData<'a>;
 
-
     fn run(&mut self, mut data: Self::SystemData) {
         let physics_thread_link = data.c.physics_thread_link.lock().unwrap();
 
         for (&rigidbodyid, renderable) in (&data.rigidbodyidc, &mut data.renderablec).join() {
             let (cx, cy) = physics_thread_link.get_position(rigidbodyid);
-            renderable.x = cx - renderable.w / 2.0;
-            renderable.y = cy - renderable.h / 2.0;
+
+            renderable.x = cx;
+            renderable.y = cy;
             renderable.rotation = physics_thread_link.get_rotation(rigidbodyid);
         }
     }
@@ -75,12 +78,13 @@ struct PlayerSystem;
 impl<'a> specs::System<'a> for PlayerSystem {
     type SystemData = PlayerData<'a>;
 
-
     fn run(&mut self, mut data: Self::SystemData) {
         let physics = data.c.physics_thread_link.lock().unwrap();
 
         for (&body_id, player) in (&data.rigidbodyidc, &mut data.playerc).join() {
-            player.touching_ground = !physics.get_bodies_intersecting_sensor(player.sensor_id()).is_empty();
+            player.touching_ground = !physics
+                .get_bodies_intersecting_sensor(player.sensor_id())
+                .is_empty();
 
             physics.clear_lin_force(body_id);
 
@@ -134,7 +138,6 @@ struct TimeStopSystem;
 impl<'a> specs::System<'a> for TimeStopSystem {
     type SystemData = TimeStopData<'a>;
 
-
     fn run(&mut self, mut data: Self::SystemData) {
         let physics = data.c.physics_thread_link.lock().unwrap();
 
@@ -159,6 +162,69 @@ impl<'a> specs::System<'a> for TimeStopSystem {
                 physics.set_lin_vel(body_id, new_lin_vel);
                 physics.set_ang_vel(body_id, new_ang_vel);
             }
+        }
+    }
+}
+
+#[derive(SystemData)]
+struct KnifeData<'a> {
+    rigid_body_idc: WS<'a, RigidBodyID>,
+    knifec: RS<'a, Knife>,
+    hitpointsc: WS<'a, Hitpoints>,
+    removec: WS<'a, Remove>,
+
+    entities: specs::Entities<'a>,
+    c: specs::Fetch<'a, SystemContext>,
+}
+
+struct KnifeSystem;
+
+impl<'a> specs::System<'a> for KnifeSystem {
+    type SystemData = KnifeData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        let physics = data.c.physics_thread_link.lock().unwrap();
+
+        for (entity, &body_id, knife) in (&*data.entities, &data.rigid_body_idc, &data.knifec).join() {
+            if let Some(contacts) = data.c.contact_map.get(&body_id) {
+                for contact in contacts {
+                    if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
+                        hitpoints.damage(1);
+                        data.removec.insert(entity, Remove);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[derive(SystemData)]
+struct RemoveData<'a> {
+    rigid_body_idc: WS<'a, RigidBodyID>,
+    removec: WS<'a, Remove>,
+
+    entities: specs::Entities<'a>,
+    c: specs::Fetch<'a, SystemContext>,
+}
+
+
+struct RemoveSystem;
+
+impl<'a> specs::System<'a> for RemoveSystem {
+    type SystemData = RemoveData<'a>;
+
+    fn run(&mut self, data: Self::SystemData) {
+        for (&body_id, _) in (&data.rigid_body_idc, &data.removec).join() {
+            data.c
+                .physics_thread_link
+                .lock()
+                .unwrap()
+                .remove_rigid_body(body_id);
+        }
+
+        for (entity, _) in (&*data.entities, &data.removec).join() {
+            data.entities.delete(entity);
         }
     }
 }
