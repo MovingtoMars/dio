@@ -15,6 +15,8 @@ use chan;
 use self::MessageToPhysicsThread::*;
 use self::MessageFromPhysicsThread::*;
 
+pub const PARTICLE_GROUP_ID: usize = 4;
+
 // XXX rename?
 pub struct PhysicsThreadLink {
     pub send: chan::Sender<MessageToPhysicsThread>, // XXX private
@@ -125,6 +127,7 @@ pub enum MessageToPhysicsThread {
         restitution: N,
         friction: N,
         translation: Vector<N>,
+        is_particle: bool,
     },
     RemoveRigidBody(RigidBodyID),
     GetPosition(RigidBodyID),
@@ -251,6 +254,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 restitution,
                 friction,
                 translation,
+                is_particle,
             } => {
                 let mut body = RigidBody::new(shape, mass_properties, restitution, friction);
                 body.set_margin(BODY_MARGIN);
@@ -262,7 +266,15 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 })));
 
                 let mut cg = *body.collision_groups();
-                cg.enable_interaction_with_sensors();
+                if is_particle {
+                    cg.modify_membership(PARTICLE_GROUP_ID, true);
+                } else {
+                    cg.modify_membership(PARTICLE_GROUP_ID, false);
+                    cg.enable_interaction_with_sensors();
+                    if body.can_move() {
+                        cg.modify_blacklist(PARTICLE_GROUP_ID, true);
+                    }
+                }
                 body.set_collision_groups(cg);
 
                 let bh = physics_world.add_rigid_body(body);
@@ -365,9 +377,12 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 if let Some(rel_pos) = rel_pos {
                     sensor.set_relative_position(rel_pos);
                 }
-                sensor
-                    .collision_groups_mut()
-                    .enable_interaction_with_static();
+
+                let mut cg = *sensor.collision_groups();
+                cg.enable_interaction_with_static();
+                cg.modify_membership(PARTICLE_GROUP_ID, false);
+                *sensor.collision_groups_mut() = cg;
+
                 sensor.enable_interfering_bodies_collection();
 
                 sensor_map.insert(id, physics_world.add_sensor(sensor));
@@ -414,6 +429,8 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
                             depth: contact.depth,
                             normal: contact.normal,
+                            position1: contact.world1,
+                            position2: contact.world2,
                         }
                     })
                     .collect();
@@ -436,12 +453,15 @@ pub struct Contact {
     pub obj2: UserData,
     pub normal: Vector<N>,
     pub depth: N,
+    pub position1: Point<N>,
+    pub position2: Point<N>,
 }
 
 impl Contact {
     pub fn flip(mut self) -> Self {
         use std;
         std::mem::swap(&mut self.obj1, &mut self.obj2);
+        std::mem::swap(&mut self.position1, &mut self.position2);
 
         self.normal = self.normal * -1.0;
 

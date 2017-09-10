@@ -9,6 +9,7 @@ extern crate ncollide;
 extern crate nphysics2d as nphysics;
 extern crate num;
 extern crate piston_window;
+extern crate rand;
 extern crate rodio;
 #[macro_use]
 extern crate serde_derive;

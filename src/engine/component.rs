@@ -21,6 +21,7 @@ pub fn register_components(world: &mut specs::World) {
         Hitpoints,
         Knife,
         Remove,
+        TimedRemove,
     }
 }
 
@@ -221,5 +222,12 @@ impl Hitpoints {
 pub struct Remove;
 
 impl Component for Remove {
+    type Storage = HashMapStorage<Self>;
+}
+
+#[derive(Debug, Clone)]
+pub struct TimedRemove(pub N);
+
+impl Component for TimedRemove {
     type Storage = HashMapStorage<Self>;
 }

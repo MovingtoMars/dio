@@ -136,11 +136,14 @@ impl World {
 
         self.specs_world.maintain();
 
+        let events = Arc::new(Mutex::new(Vec::new()));
+
         let context = SystemContext {
             time,
             physics_thread_link: self.physics_thread_link.clone(),
             time_is_stopped: self.time_stop_remaining.is_some(),
             contact_map,
+            events: events.clone(),
         };
         self.specs_world.add_resource(context.clone());
 
@@ -149,11 +152,27 @@ impl World {
 
         self.specs_world.maintain();
 
+        for event in &*events.lock().unwrap() {
+            self.run_event(event);
+        }
+
         if let Some(t) = self.time_stop_remaining {
             if time >= t {
                 self.start_time();
             } else {
                 self.time_stop_remaining = Some(t - time);
+            }
+        }
+    }
+
+    pub fn run_event(&mut self, event: &Event) {
+        match *event {
+            Event::SpawnParticle {
+                rect,
+                velocity,
+                ttl,
+            } => {
+                self.new_particle(rect, velocity, ttl);
             }
         }
     }
@@ -261,8 +280,50 @@ impl World {
             restitution: 0.2,
             friction: 0.3,
             translation: Vector::new(x, y),
+            is_particle: false,
         };
         self.physics_thread_link.lock().unwrap().send.send(message);
+
+        entity
+    }
+
+    pub fn new_particle(&mut self, rect: Rect, velocity: Vector<N>, ttl: N) -> Entity {
+        let Rect { x, y, hw, hh } = rect;
+        let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
+        let id = self.new_rigid_body_id();
+
+        let renderable = Renderable::new(x, y, 0.0).with(RenderItem::rectangle(
+            0.0,
+            0.0,
+            hw * 2.0,
+            hh * 2.0,
+            0.0,
+            [1.0, 0.0, 0.0, 1.0],
+        ));
+
+        let entity = self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(TimedRemove(ttl))
+            .with(TimeStopStore::new())
+            .build();
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            entity,
+            shape: ShapeHandle::new(shape),
+            mass_properties: Some((1400.0, Point::new(0.0, 0.0), AngularInertia::new(1.0))),
+            restitution: 0.0,
+            friction: 0.5,
+            translation: Vector::new(x, y),
+            is_particle: true,
+        };
+        self.physics_thread_link.lock().unwrap().send.send(message);
+        self.physics_thread_link
+            .lock()
+            .unwrap()
+            .set_lin_vel(id, velocity);
 
         entity
     }
@@ -317,6 +378,7 @@ impl World {
             restitution: 0.2,
             friction: 0.1,
             translation: Vector::new(x, y),
+            is_particle: false,
         };
 
 
@@ -379,6 +441,7 @@ impl World {
             restitution: material.restitution(),
             friction: 0.6,
             translation: Vector::new(x, y),
+            is_particle: false,
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -425,6 +488,7 @@ impl World {
             restitution: 0.2,
             friction: 0.3,
             translation: Vector::new(x, y),
+            is_particle: false,
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -470,6 +534,7 @@ impl World {
             restitution: 0.2,
             friction: 0.1,
             translation: Vector::new(x, y),
+            is_particle: false,
         };
 
         let physics = self.physics_thread_link.lock().unwrap();
@@ -553,4 +618,13 @@ impl CrateMaterial {
             CrateMaterial::Wood => ([0.4, 0.2, 0.0, 1.0], [0.6, 0.3, 0.0, 1.0]),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum Event {
+    SpawnParticle {
+        rect: Rect,
+        velocity: Vector<N>,
+        ttl: N,
+    },
 }

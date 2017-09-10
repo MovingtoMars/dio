@@ -15,6 +15,13 @@ pub struct SystemContext {
     pub physics_thread_link: Arc<Mutex<PhysicsThreadLink>>,
     pub time_is_stopped: bool,
     pub contact_map: HashMap<RigidBodyID, Vec<Contact>>,
+    pub events: Arc<Mutex<Vec<Event>>>,
+}
+
+impl SystemContext {
+    pub fn push_event(&self, event: Event) {
+        self.events.lock().unwrap().push(event);
+    }
 }
 
 pub fn register_systems<'a, 'b>(d: specs::DispatcherBuilder<'a, 'b>) -> specs::DispatcherBuilder<'a, 'b> {
@@ -28,8 +35,8 @@ pub fn register_systems<'a, 'b>(d: specs::DispatcherBuilder<'a, 'b>) -> specs::D
     let d = d.add(KnifeSystem, "KnifeSystem", &[]);
 
     let d = d.add_barrier();
-
-    let d = d.add(RemoveSystem, "RemoveSystem", &[]);
+    let d = d.add(TimedRemoveSystem, "TimedRemoveSystem", &[]);
+    let d = d.add(RemoveSystem, "RemoveSystem", &["TimedRemoveSystem"]);
 
     d
 }
@@ -189,6 +196,20 @@ impl<'a> specs::System<'a> for KnifeSystem {
             if let Some(contacts) = data.c.contact_map.get(&body_id) {
                 for contact in contacts {
                     if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
+                        use rand;
+                        use rand::distributions::IndependentSample;
+                        let normal = rand::distributions::Normal::new(0.0, 1.0);
+                        let chi_squared = rand::distributions::ChiSquared::new(6.0);
+                        let rng = &mut rand::thread_rng();
+
+                        for i in 0..3 {
+                            data.c.push_event(Event::SpawnParticle {
+                                rect: Rect::new(contact.position1.x, contact.position1.y, 0.07, 0.07),
+                                velocity: Vector::new(normal.ind_sample(rng) as N, normal.ind_sample(rng) as N),
+                                ttl: chi_squared.ind_sample(rng).min(30.0) as N,
+                            });
+                        }
+
                         hitpoints.damage(1);
                         data.removec.insert(entity, Remove);
                         break;
@@ -208,7 +229,6 @@ struct RemoveData<'a> {
     c: specs::Fetch<'a, SystemContext>,
 }
 
-
 struct RemoveSystem;
 
 impl<'a> specs::System<'a> for RemoveSystem {
@@ -225,6 +245,34 @@ impl<'a> specs::System<'a> for RemoveSystem {
 
         for (entity, _) in (&*data.entities, &data.removec).join() {
             data.entities.delete(entity);
+        }
+    }
+}
+
+
+#[derive(SystemData)]
+struct TimedRemoveData<'a> {
+    timed_removec: WS<'a, TimedRemove>,
+    removec: WS<'a, Remove>,
+
+    entities: specs::Entities<'a>,
+    c: specs::Fetch<'a, SystemContext>,
+}
+
+struct TimedRemoveSystem;
+
+impl<'a> specs::System<'a> for TimedRemoveSystem {
+    type SystemData = TimedRemoveData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        for (entity, timed_remove) in (&*data.entities, &mut data.timed_removec).join() {
+            if !data.c.time_is_stopped {
+                timed_remove.0 -= data.c.time;
+            }
+
+            if timed_remove.0 <= 0.0 {
+                data.removec.insert(entity, Remove);
+            }
         }
     }
 }
