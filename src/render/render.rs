@@ -89,7 +89,7 @@ pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &I
 
         win.draw_2d(input, |c, g| {
             rectangle(
-                [0.0, 0.4, 0.8, 1.0],
+                [0.5, 0.7, 1.0, 1.0],
                 [20.0, 20.0, width, 20.0],
                 c.transform,
                 g,
