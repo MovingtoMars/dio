@@ -203,7 +203,7 @@ fn spawn_blood(origin: Point<N>) -> Vec<Event> {
 
     let size_dist = Normal::new(mean_size, 0.02);
     let velocity_dist = Normal::new(0.0, 1.0);
-    let ttl_dist = ChiSquared::new(6.0);
+    let ttl_dist = ChiSquared::new(4.0);
 
     let rng = &mut rand::thread_rng();
 
