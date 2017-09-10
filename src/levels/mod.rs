@@ -7,6 +7,7 @@ use std::fmt::{self, Display, Formatter};
 use serde_json;
 
 use media;
+use engine::*;
 
 #[derive(Debug)]
 pub enum LevelError {
@@ -48,13 +49,43 @@ impl From<io::Error> for LevelError {
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Level {
     pub name: String,
-    pub player_start_pos: (f32, f32),
+    pub player_start_pos: (N, N),
+    pub entities: Vec<LevelEntity>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LevelEntity {
+    Ground { rect: Rect },
+    Crate { rect: Rect, material: CrateMaterial },
+    Enemy { rect: Rect },
 }
 
 impl Level {
+    pub fn to_world(&self) -> World {
+        let (px, py) = self.player_start_pos;
+        let mut world = World::new(px, py);
+
+        for e in &self.entities {
+            match *e {
+                LevelEntity::Ground { rect } => {
+                    world.new_ground(rect);
+                }
+                LevelEntity::Crate { rect, material } => {
+                    world.new_crate(rect, material);
+                }
+                LevelEntity::Enemy { rect } => {
+                    world.new_enemy(rect);
+                }
+            }
+        }
+
+        world
+    }
+
     pub fn load(media_handle: &media::MediaHandle, path: &str) -> Result<Level, LevelError> {
         let mut full_path = media_handle.base_path.clone();
-        full_path.push(&Path::new(path));
+        full_path.push("levels/");
+        full_path.push(path);
 
         let mut file = OpenOptions::new().read(true).open(full_path)?;
 
@@ -70,7 +101,8 @@ impl Level {
     pub fn save(&self, media_handle: &media::MediaHandle, path: &str) -> Result<(), LevelError> {
         println!("saving...");
         let mut full_path = media_handle.base_path.clone();
-        full_path.push(&Path::new(path));
+        full_path.push("levels/");
+        full_path.push(path);
 
         let mut file = OpenOptions::new()
             .write(true)
@@ -78,7 +110,7 @@ impl Level {
             .create(true)
             .open(full_path)?;
 
-        let text = serde_json::to_string(self)?;
+        let text = serde_json::to_string_pretty(self)?;
         file.write_all(text.as_ref())?;
 
         println!("Saved level `{}`", self.name);

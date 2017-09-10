@@ -20,6 +20,9 @@ pub type RigidBodyHandle = nphysics::object::RigidBodyHandle<N>;
 
 pub const BODY_MARGIN: f32 = 0.04;
 
+pub const PLAYER_HALF_WIDTH: f32 = 0.35;
+pub const PLAYER_HALF_HEIGHT: f32 = 0.95;
+
 // TODO event system: entities aren't really added until events processed
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -54,7 +57,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(x: f32, y: f32, hw: f32, hh: f32) -> Self {
+    pub fn new(x: f32, y: f32) -> Self {
         let mut specs_world = specs::World::new();
 
         register_components(&mut specs_world);
@@ -79,7 +82,7 @@ impl World {
             normal_gravity: gravity,
         };
 
-        world.player = world.new_player(x, y, hw, hh);
+        world.player = world.new_player(x, y);
 
         world
     }
@@ -230,7 +233,8 @@ impl World {
         SensorID(self.next_sensor_id.next())
     }
 
-    pub fn new_ground(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
+    pub fn new_ground(&mut self, rect: Rect) -> Entity {
+        let Rect { x, y, hw, hh } = rect;
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
@@ -264,7 +268,10 @@ impl World {
     }
 
     // Make sure to set world.player to the returned entity!
-    fn new_player(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
+    fn new_player(&mut self, x: f32, y: f32) -> Entity {
+        let hw = PLAYER_HALF_WIDTH;
+        let hh = PLAYER_HALF_HEIGHT;
+
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
         let sensor_id = self.new_sensor_id();
@@ -334,7 +341,8 @@ impl World {
         entity
     }
 
-    pub fn new_crate(&mut self, x: f32, y: f32, hw: f32, hh: f32, material: CrateMaterial) -> Entity {
+    pub fn new_crate(&mut self, rect: Rect, material: CrateMaterial) -> Entity {
+        let Rect { x, y, hw, hh } = rect;
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
@@ -378,7 +386,8 @@ impl World {
         entity
     }
 
-    pub fn new_enemy(&mut self, x: f32, y: f32, hw: f32, hh: f32) -> Entity {
+    pub fn new_enemy(&mut self, rect: Rect) -> Entity {
+        let Rect { x, y, hw, hh } = rect;
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
@@ -517,7 +526,7 @@ impl World {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum CrateMaterial {
     Steel,
     Wood,

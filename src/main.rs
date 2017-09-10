@@ -29,7 +29,9 @@ mod audio;
 mod stat;
 mod levels;
 
-use engine::{CrateMaterial, World};
+use engine::*;
+
+use levels::*;
 
 use interface::camera::Camera;
 
@@ -56,24 +58,40 @@ fn main() {
                                    .build()
                                    .unwrap();
 
-    let mut world = World::new(-3.0, 1.0, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT);
+    // let level = levels::Level {
+    //     name: String::from("Test Level"),
+    //     player_start_pos: (-3.0, 1.0),
+    //     entities: vec![
+    //         LevelEntity::Ground {
+    //             rect: Rect::new(0.0, 4.5, 7.0, 0.5),
+    //         },
+    //         LevelEntity::Ground {
+    //             rect: Rect::new(-6.5, 0.0, 0.5, 5.0),
+    //         },
+    //         LevelEntity::Crate {
+    //             rect: Rect::new(-2.0, 3.5, 0.5, 0.5),
+    //             material: CrateMaterial::Steel,
+    //         },
+    //         LevelEntity::Crate {
+    //             rect: Rect::new(-2.0, 2.5, 0.5, 0.5),
+    //             material: CrateMaterial::Wood,
+    //         },
+    //         LevelEntity::Enemy {
+    //             rect: Rect::new(2.0, 2.5, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT),
+    //         },
+    //     ],
+    // };
 
-    world.new_ground(0.0, 4.5, 7.0, 0.5);
-    world.new_ground(-6.5, 0.0, 0.5, 5.0);
-    world.new_crate(-2.0, 3.5, 0.5, 0.5, CrateMaterial::Steel);
-    world.new_crate(-2.0, 2.5, 0.5, 0.5, CrateMaterial::Wood);
-    world.new_enemy(2.0, 2.5, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT);
+    let media_handle = media::MediaHandle::new(window.factory.clone());
+
+    let level = Level::load(&media_handle, "default.level.json").unwrap();
+
+    let mut world = level.to_world();
 
     let mut cam = Camera::new(0.0, 0.0, INIT_WIN_WIDTH, INIT_WIN_HEIGHT, 50.0);
 
-    let media_handle = media::MediaHandle::new(window.factory.clone());
     let mut fonts = render::Fonts::new(&media_handle);
-
-    (&levels::Level {
-        name: String::from("Test Level"),
-        player_start_pos: (1.0, 2.0),
-    }).save(&media_handle, "default.level.json")
-        .unwrap();
+    level.save(&media_handle, "default.level.json").unwrap();
 
     window.set_ups(80);
 
@@ -106,8 +124,6 @@ fn main() {
 }
 
 pub const KNIFE_INIT_SPEED: f32 = 14.0;
-const PLAYER_HALF_WIDTH: f32 = 0.35;
-const PLAYER_HALF_HEIGHT: f32 = 0.95;
 
 fn spawn_knife(world: &mut World, cam: &mut Camera) {
     let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
