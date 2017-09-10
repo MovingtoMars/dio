@@ -200,13 +200,28 @@ impl<'a> specs::System<'a> for KnifeSystem {
                         use rand::distributions::IndependentSample;
                         let normal = rand::distributions::Normal::new(0.0, 1.0);
                         let chi_squared = rand::distributions::ChiSquared::new(6.0);
+                        const MEAN_SIZE: f64 = 0.065;
+                        let normal_size = rand::distributions::Normal::new(MEAN_SIZE, 0.015);
                         let rng = &mut rand::thread_rng();
 
                         for i in 0..3 {
+                            let size = normal_size
+                                .ind_sample(rng)
+                                .max(0.055)
+                                .max(BODY_MARGIN as f64);
+
+                            // Bigger particles tend to live for less time
+                            let ttl = chi_squared.ind_sample(rng).min(30.0) * (MEAN_SIZE / size);
+
                             data.c.push_event(Event::SpawnParticle {
-                                rect: Rect::new(contact.position1.x, contact.position1.y, 0.07, 0.07),
+                                rect: Rect::new(
+                                    contact.position1.x,
+                                    contact.position1.y,
+                                    size as N,
+                                    size as N,
+                                ),
                                 velocity: Vector::new(normal.ind_sample(rng) as N, normal.ind_sample(rng) as N),
-                                ttl: chi_squared.ind_sample(rng).min(30.0) as N,
+                                ttl: ttl as N,
                             });
                         }
 
