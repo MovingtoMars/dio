@@ -8,6 +8,7 @@ use ncollide::bounding_volume::{HasBoundingVolume, AABB};
 use nphysics;
 use nphysics::math::{AngularInertia, Isometry, Orientation, Point, Vector};
 use nphysics::object::{Sensor, SensorCollisionGroups};
+use nphysics::detection::joint::{Anchor, Fixed};
 use specs::Entity;
 
 use chan;
@@ -28,7 +29,7 @@ impl PhysicsThreadLink {
         self.send.send(Step(dt));
     }
 
-    pub fn get_position(&self, id: RigidBodyID) -> (N, N) {
+    pub fn get_position(&self, id: RigidBodyID) -> Point<N> {
         self.send.send(GetPosition(id));
         self.recv.recv().unwrap().unwrap_position()
     }
@@ -115,6 +116,15 @@ impl PhysicsThreadLink {
     pub fn remove_rigid_body(&self, id: RigidBodyID) {
         self.send.send(RemoveRigidBody(id));
     }
+
+    pub fn add_fixed_joint(&self, body1: RigidBodyID, body2: RigidBodyID, pos1: Isometry<N>, pos2: Isometry<N>) {
+        self.send.send(AddFixedJoint {
+            body1,
+            body2,
+            pos1,
+            pos2,
+        });
+    }
 }
 
 pub enum MessageToPhysicsThread {
@@ -144,6 +154,12 @@ pub enum MessageToPhysicsThread {
     ClearLinForce(RigidBodyID),
     SetGravity(Vector<N>),
     ApplyCentralImpulse(RigidBodyID, Vector<N>),
+    AddFixedJoint {
+        body1: RigidBodyID,
+        body2: RigidBodyID,
+        pos1: Isometry<N>,
+        pos2: Isometry<N>,
+    },
 
     AddSensor {
         id: SensorID,
@@ -157,7 +173,7 @@ pub enum MessageToPhysicsThread {
 }
 
 pub enum MessageFromPhysicsThread {
-    Position(N, N),
+    Position(Point<N>),
     HalfExtents(N, N),
     Rotation(N),
     LinVel(Vector<N>),
@@ -168,9 +184,9 @@ pub enum MessageFromPhysicsThread {
 }
 
 impl MessageFromPhysicsThread {
-    pub fn unwrap_position(self) -> (N, N) {
+    pub fn unwrap_position(self) -> Point<N> {
         match self {
-            Position(x, y) => (x, y),
+            Position(x) => x,
             _ => panic!("Expected Position"),
         }
     }
@@ -299,9 +315,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
             GetPosition(id) => {
                 let body = body!(rigid_body_id_map, id);
-                let x = body.position().translation.vector.x;
-                let y = body.position().translation.vector.y;
-                send.send(Position(x, y));
+                send.send(Position(body.position_center()));
             }
 
             GetRotation(id) => {
@@ -362,6 +376,18 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
             ApplyCentralImpulse(id, x) => {
                 let mut body = body_mut!(rigid_body_id_map, id);
                 body.apply_central_impulse(x);
+            }
+
+            AddFixedJoint {
+                body1,
+                body2,
+                pos1,
+                pos2,
+            } => {
+                let anchor1 = Anchor::new(Some(rigid_body_id_map.get(&body1).unwrap().clone()), pos1);
+                let anchor2 = Anchor::new(Some(rigid_body_id_map.get(&body2).unwrap().clone()), pos2);
+
+                physics_world.add_fixed(Fixed::new(anchor1, anchor2));
             }
 
             AddSensor {

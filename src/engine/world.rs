@@ -458,7 +458,7 @@ impl World {
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
         let id = self.new_rigid_body_id();
 
-        let density = 500.0;
+        let density = 1000.0;
 
         let renderable = Renderable::new(x, y, 0.0)
             .with(RenderItem::rectangle(

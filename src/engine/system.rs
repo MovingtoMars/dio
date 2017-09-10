@@ -3,7 +3,7 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use specs::{self, Join};
-use nphysics::math::{Orientation, Rotation, Vector};
+use nphysics::math::{Isometry, Orientation, Rotation, Vector};
 use num::Zero;
 
 pub type RS<'a, T> = specs::ReadStorage<'a, T>;
@@ -58,10 +58,10 @@ impl<'a> specs::System<'a> for UpdateRenderableFromRigidBodyIDSystem {
         let physics_thread_link = data.c.physics_thread_link.lock().unwrap();
 
         for (&rigidbodyid, renderable) in (&data.rigidbodyidc, &mut data.renderablec).join() {
-            let (cx, cy) = physics_thread_link.get_position(rigidbodyid);
+            let pos = physics_thread_link.get_position(rigidbodyid);
 
-            renderable.x = cx;
-            renderable.y = cy;
+            renderable.x = pos.x;
+            renderable.y = pos.y;
             renderable.rotation = physics_thread_link.get_rotation(rigidbodyid);
         }
     }

@@ -130,17 +130,17 @@ fn spawn_knife(world: &mut World, cam: &mut Camera) {
     let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
 
     let physics = world.physics_thread_link();
-    let (px, py) = physics
+    let pos = physics
         .lock()
         .unwrap()
         .get_position(world.player_rigid_body_id());
 
-    let sx = if kx < px {
-        px - PLAYER_HALF_WIDTH * 1.6
+    let sx = if kx < pos.x {
+        pos.x - PLAYER_HALF_WIDTH * 1.6
     } else {
-        px + PLAYER_HALF_WIDTH * 1.6
+        pos.x + PLAYER_HALF_WIDTH * 1.6
     };
-    let sy = py - PLAYER_HALF_HEIGHT * 0.32;
+    let sy = pos.y - PLAYER_HALF_HEIGHT * 0.32;
 
     let vel = Vector::new(kx - sx, ky - sy).normalize() * KNIFE_INIT_SPEED;
 
