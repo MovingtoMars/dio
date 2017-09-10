@@ -275,7 +275,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 let mut body = RigidBody::new(shape, mass_properties, restitution, friction);
                 body.set_margin(BODY_MARGIN);
                 body.set_translation(Translation::from_vector(translation));
-                body.set_deactivation_threshold(None); // XXX
+                // body.set_deactivation_threshold(None); // XXX
                 body.set_user_data(Some(Box::new(UserData {
                     rigid_body_id: id,
                     entity,
