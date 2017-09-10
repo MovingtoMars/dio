@@ -4,15 +4,14 @@ use std::path::Path;
 use std::error::Error as StdError;
 use std::fmt::{self, Display, Formatter};
 
-use rustc_serialize::json;
+use serde_json;
 
 use media;
 
 #[derive(Debug)]
 pub enum LevelError {
     IoError(io::Error),
-    DecoderError(json::DecoderError),
-    EncoderError(json::EncoderError),
+    SerdeError(serde_json::Error),
 }
 
 impl Display for LevelError {
@@ -28,21 +27,15 @@ impl StdError for LevelError {
 
     fn cause(&self) -> Option<&StdError> {
         match *self {
-            LevelError::DecoderError(ref e) => Some(e),
+            LevelError::SerdeError(ref e) => Some(e),
             _ => None,
         }
     }
 }
 
-impl From<json::DecoderError> for LevelError {
-    fn from(err: json::DecoderError) -> LevelError {
-        LevelError::DecoderError(From::from(err))
-    }
-}
-
-impl From<json::EncoderError> for LevelError {
-    fn from(err: json::EncoderError) -> LevelError {
-        LevelError::EncoderError(From::from(err))
+impl From<serde_json::Error> for LevelError {
+    fn from(err: serde_json::Error) -> LevelError {
+        LevelError::SerdeError(From::from(err))
     }
 }
 
@@ -52,7 +45,7 @@ impl From<io::Error> for LevelError {
     }
 }
 
-#[derive(Default, Clone, RustcDecodable, RustcEncodable)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Level {
     pub name: String,
     pub player_start_pos: (f32, f32),
@@ -63,11 +56,11 @@ impl Level {
         let mut full_path = media_handle.base_path.clone();
         full_path.push(&Path::new(path));
 
-        let mut file = try!(OpenOptions::new().read(true).open(full_path));
+        let mut file = OpenOptions::new().read(true).open(full_path)?;
 
         let mut text = String::new();
-        try!(file.read_to_string(&mut text));
-        let level: Level = try!(json::decode(&text));
+        file.read_to_string(&mut text)?;
+        let level: Level = serde_json::from_str(&text)?;
 
         println!("Loaded level `{}`", level.name);
 
@@ -79,16 +72,14 @@ impl Level {
         let mut full_path = media_handle.base_path.clone();
         full_path.push(&Path::new(path));
 
-        let mut file = try!(
-            OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .create(true)
-                .open(full_path)
-        );
+        let mut file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(full_path)?;
 
-        let text = try!(json::encode(self));
-        try!(file.write_all(text.as_ref()));
+        let text = serde_json::to_string(self)?;
+        file.write_all(text.as_ref())?;
 
         println!("Saved level `{}`", self.name);
 

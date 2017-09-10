@@ -10,7 +10,9 @@ extern crate nphysics2d as nphysics;
 extern crate num;
 extern crate piston_window;
 extern crate rodio;
-extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 extern crate shred;
 #[macro_use]
 extern crate shred_derive;
@@ -66,13 +68,14 @@ fn main() {
 
     let media_handle = media::MediaHandle::new(window.factory.clone());
     let mut fonts = render::Fonts::new(&media_handle);
-    //
-    // (&levels::Level{
-    //     name: String::from("Test Level"),
-    //     player_start_pos: (1.0, 2.0),
-    // }).save(&media_handle, "default.level.json").unwrap();
 
-    window.set_ups(60);
+    (&levels::Level {
+        name: String::from("Test Level"),
+        player_start_pos: (1.0, 2.0),
+    }).save(&media_handle, "default.level.json")
+        .unwrap();
+
+    window.set_ups(80);
 
     let mut keys_down = HashSet::new();
 

@@ -3,9 +3,9 @@ use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use std::sync::mpsc;
 use std::thread;
 
-use rustc_serialize::json;
+use serde_json;
 
-#[derive(Default, Clone, Copy, RustcDecodable, RustcEncodable)]
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub struct Stats {
     pub num_time_stops: u64,
     pub num_clicks: u64,
@@ -42,7 +42,7 @@ impl Handler {
             Ok(mut file) => {
                 let mut text = String::new();
                 file.read_to_string(&mut text).unwrap();
-                stats = json::decode(&text).unwrap();
+                stats = serde_json::from_str(&text).unwrap();
 
                 file
             }
@@ -54,7 +54,7 @@ impl Handler {
                     .open(FILENAME)
                     .unwrap();
 
-                let encoded = json::encode(&stats).unwrap();
+                let encoded = serde_json::to_string(&stats).unwrap();
                 file.write_all(encoded.as_ref()).unwrap();
                 file
             } else {
@@ -75,7 +75,7 @@ impl Handler {
                 };
 
                 file.seek(SeekFrom::Start(0)).unwrap();
-                let encoded = json::encode(&stats).unwrap();
+                let encoded = serde_json::to_string(&stats).unwrap();
                 file.write_all(encoded.as_ref()).unwrap();
                 file.set_len(encoded.len() as u64).unwrap();
             }
