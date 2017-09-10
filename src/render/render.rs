@@ -82,6 +82,20 @@ pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &I
             }
         }
     }
+
+    if let Some(time_stop_remaining) = world.time_stop_remaining() {
+        let win_draw_size = win.draw_size();
+        let width = time_stop_remaining as f64 / 5.0 * 0.2 * win_draw_size.width as f64;
+
+        win.draw_2d(input, |c, g| {
+            rectangle(
+                [0.0, 0.4, 0.8, 1.0],
+                [20.0, 20.0, width, 20.0],
+                c.transform,
+                g,
+            );
+        });
+    }
 }
 
 pub struct Fonts {

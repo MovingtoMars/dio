@@ -52,12 +52,12 @@ pub struct World {
     next_sensor_id: Counter,
     player: Entity,
 
-    time_stop_remaining: Option<f32>,
+    time_stop_remaining: Option<N>,
     normal_gravity: Vector<N>,
 }
 
 impl World {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn new(x: N, y: N) -> Self {
         let mut specs_world = specs::World::new();
 
         register_components(&mut specs_world);
@@ -242,6 +242,10 @@ impl World {
             store.saved_lin_vel = None;
             store.saved_ang_vel = None;
         }
+    }
+
+    pub fn time_stop_remaining(&self) -> Option<f32> {
+        self.time_stop_remaining
     }
 
     fn new_rigid_body_id(&mut self) -> RigidBodyID {
