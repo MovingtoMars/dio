@@ -3,7 +3,7 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use specs::{self, Join};
-use nphysics::math::{Isometry, Orientation, Rotation, Vector};
+use nphysics::math::{Isometry, Orientation, Point, Rotation, Vector};
 use num::Zero;
 
 pub type RS<'a, T> = specs::ReadStorage<'a, T>;
@@ -21,6 +21,13 @@ pub struct SystemContext {
 impl SystemContext {
     pub fn push_event(&self, event: Event) {
         self.events.lock().unwrap().push(event);
+    }
+
+    pub fn push_events<I: IntoIterator<Item = Event>>(&self, it: I) {
+        let mut events = self.events.lock().unwrap();
+        for event in it.into_iter() {
+            events.push(event);
+        }
     }
 }
 
@@ -186,6 +193,45 @@ struct KnifeData<'a> {
 
 struct KnifeSystem;
 
+fn spawn_blood(origin: Point<N>) -> Vec<Event> {
+    let mut res = Vec::new();
+
+    use rand;
+    use rand::distributions::{ChiSquared, IndependentSample, Normal, Range};
+
+    let mean_size = 0.065;
+
+    let size_dist = Normal::new(mean_size, 0.02);
+    let velocity_dist = Normal::new(0.0, 1.0);
+    let ttl_dist = ChiSquared::new(6.0);
+
+    let rng = &mut rand::thread_rng();
+
+    let max_num_dist = Range::new(2, 5);
+
+    for i in 0..max_num_dist.ind_sample(rng) {
+        let size = size_dist
+            .ind_sample(rng)
+            .max(0.055)
+            .max(BODY_MARGIN as f64)
+            .min(0.1);
+
+        // Bigger particles tend to live for less time
+        let ttl = ttl_dist.ind_sample(rng).min(30.0) * (mean_size / size);
+
+        res.push(Event::SpawnParticle {
+            rect: Rect::new(origin.x, origin.y, size as N, size as N),
+            velocity: Vector::new(
+                velocity_dist.ind_sample(rng) as N,
+                velocity_dist.ind_sample(rng) as N,
+            ),
+            ttl: ttl as N,
+        });
+    }
+
+    res
+}
+
 impl<'a> specs::System<'a> for KnifeSystem {
     type SystemData = KnifeData<'a>;
 
@@ -196,35 +242,7 @@ impl<'a> specs::System<'a> for KnifeSystem {
             if let Some(contacts) = data.c.contact_map.get(&body_id) {
                 for contact in contacts {
                     if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
-                        use rand;
-                        use rand::distributions::IndependentSample;
-                        let normal = rand::distributions::Normal::new(0.0, 1.0);
-                        let chi_squared = rand::distributions::ChiSquared::new(6.0);
-                        const MEAN_SIZE: f64 = 0.065;
-                        let normal_size = rand::distributions::Normal::new(MEAN_SIZE, 0.015);
-                        let rng = &mut rand::thread_rng();
-
-                        for i in 0..3 {
-                            let size = normal_size
-                                .ind_sample(rng)
-                                .max(0.055)
-                                .max(BODY_MARGIN as f64);
-
-                            // Bigger particles tend to live for less time
-                            let ttl = chi_squared.ind_sample(rng).min(30.0) * (MEAN_SIZE / size);
-
-                            data.c.push_event(Event::SpawnParticle {
-                                rect: Rect::new(
-                                    contact.position1.x,
-                                    contact.position1.y,
-                                    size as N,
-                                    size as N,
-                                ),
-                                velocity: Vector::new(normal.ind_sample(rng) as N, normal.ind_sample(rng) as N),
-                                ttl: ttl as N,
-                            });
-                        }
-
+                        data.c.push_events(spawn_blood(contact.position1));
                         hitpoints.damage(1);
                         data.removec.insert(entity, Remove);
                         break;
