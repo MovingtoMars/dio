@@ -170,7 +170,9 @@ impl Component for TimeStopStore {
 }
 
 #[derive(Debug)]
-pub struct Knife;
+pub struct Knife {
+    pub stuck_into_entity: Option<Entity>,
+}
 
 impl Component for Knife {
     type Storage = HashMapStorage<Self>;

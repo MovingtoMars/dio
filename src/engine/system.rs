@@ -202,9 +202,14 @@ impl<'a> specs::System<'a> for KnifeSystem {
         let physics = data.c.physics_thread_link.lock().unwrap();
 
         for (entity, &body_id, knife) in (&*data.entities, &data.rigid_body_idc, &mut data.knifec).join() {
+            if knife.stuck_into_entity.is_some() {
+                continue;
+            }
+
             if let Some(contacts) = data.c.contact_map.get(&body_id) {
                 for contact in contacts {
                     if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
+                        knife.stuck_into_entity = Some(contact.obj2.entity);
                         data.c.push_events(spawn_blood(contact.position1));
                         hitpoints.damage(1);
 
@@ -319,28 +324,28 @@ fn spawn_blood(origin: Point<N>) -> Vec<Event> {
     res
 }
 
-// fn add_fixed_joint_from_contact(physics: &PhysicsThreadLink, contact: &Contact) {
-//     let body1 = contact.obj1.rigid_body_id;
-//     let body2 = contact.obj2.rigid_body_id;
-//
-//     let p1 = contact.position1 - physics.get_position(body1);
-//     let p2 = contact.position2 - physics.get_position(body2);
-//
-//     let r1 = physics.get_rotation(body1);
-//     let r2 = physics.get_rotation(body2);
-//
-//     let mut local_pos1 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
-//     let mut local_pos2 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
-//
-//     local_pos1.append_translation_mut(
-//         &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r1) * p1)),
-//     );
-//     local_pos1.append_rotation_mut(&UnitComplex::new(-r1));
-//
-//     local_pos2.append_translation_mut(
-//         &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r2) * p2)),
-//     );
-//     local_pos2.append_rotation_mut(&UnitComplex::new(-r2));
-//
-//     physics.add_fixed_joint(body1, body2, local_pos1, local_pos2);
-// }
+fn add_fixed_joint_from_contact(physics: &PhysicsThreadLink, contact: &Contact) {
+    let body1 = contact.obj1.rigid_body_id;
+    let body2 = contact.obj2.rigid_body_id;
+
+    let p1 = contact.position1 - physics.get_position(body1);
+    let p2 = contact.position2 - physics.get_position(body2);
+
+    let r1 = physics.get_rotation(body1);
+    let r2 = physics.get_rotation(body2);
+
+    let mut local_pos1 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
+    let mut local_pos2 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
+
+    local_pos1.append_translation_mut(
+        &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r1) * p1)),
+    );
+    local_pos1.append_rotation_mut(&UnitComplex::new(-(r1 - r2)));
+
+    local_pos2.append_translation_mut(
+        &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r2) * p2)),
+    );
+    // local_pos2.append_rotation_mut(&UnitComplex::new(r2));
+
+    physics.add_fixed_joint(body1, body2, local_pos1, local_pos2);
+}

@@ -527,7 +527,9 @@ impl World {
             .with(id)
             .with(renderable)
             .with(TimeStopStore::new())
-            .with(Knife)
+            .with(Knife {
+                stuck_into_entity: None,
+            })
             .build();
 
         let message = MessageToPhysicsThread::AddRigidBody {
