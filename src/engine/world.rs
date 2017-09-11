@@ -382,7 +382,7 @@ impl World {
 
 
         let sensor_height = 0.02;
-        let sensor_shape = Cuboid::new(Vector::new(hw * 0.94, sensor_height));
+        let sensor_shape = Cuboid::new(Vector::new(hw * 0.90, sensor_height));
         let rel_pos = Isometry::from_parts(
             Translation::from_vector(Vector::new(0.0, hh + sensor_height)),
             Rotation::from_angle(0.0),
