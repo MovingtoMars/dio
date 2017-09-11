@@ -21,7 +21,7 @@ pub type RigidBodyHandle = nphysics::object::RigidBodyHandle<N>;
 pub const BODY_MARGIN: f32 = 0.04;
 
 pub const PLAYER_HALF_WIDTH: f32 = 0.35;
-pub const PLAYER_HALF_HEIGHT: f32 = 0.95;
+pub const PLAYER_HALF_HEIGHT: f32 = 0.85;
 
 // TODO event system: entities aren't really added until events processed
 
