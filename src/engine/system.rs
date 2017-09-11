@@ -216,6 +216,7 @@ impl<'a> specs::System<'a> for KnifeSystem {
                         physics.set_ang_vel(body_id, Orientation::new(0.0));
 
                         add_fixed_joint_from_contact(&physics, &contact);
+                        physics.set_collision_groups_kind(body_id, CollisionGroupsKind::EmbeddedKnife);
                         // data.removec.insert(entity, Remove);
                         break;
                     }

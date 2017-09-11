@@ -5,9 +5,10 @@ use std::collections::HashMap;
 use na::geometry::Translation;
 use ncollide::shape::ShapeHandle;
 use ncollide::bounding_volume::{HasBoundingVolume, AABB};
+use ncollide::world::CollisionGroups;
 use nphysics;
 use nphysics::math::{AngularInertia, Isometry, Orientation, Point, Vector};
-use nphysics::object::{Sensor, SensorCollisionGroups};
+use nphysics::object::{RigidBodyCollisionGroups, Sensor, SensorCollisionGroups, STATIC_GROUP_ID};
 use nphysics::detection::joint::{Anchor, Fixed};
 use specs::Entity;
 
@@ -16,7 +17,52 @@ use chan;
 use self::MessageToPhysicsThread::*;
 use self::MessageFromPhysicsThread::*;
 
+pub const GENERIC_DYNAMIC_GROUP_ID: usize = 2;
 pub const PARTICLE_GROUP_ID: usize = 4;
+
+#[derive(Debug, Clone, Copy)]
+pub enum CollisionGroupsKind {
+    Particle,
+    GenericDynamic,
+    GenericStatic,
+    EmbeddedKnife,
+}
+
+impl CollisionGroupsKind {
+    pub fn to_collision_groups(self) -> RigidBodyCollisionGroups {
+        use self::CollisionGroupsKind::*;
+
+        let mut g = RigidBodyCollisionGroups::new_dynamic();
+        g.set_membership(&[]);
+
+        match self {
+            Particle => {
+                g.modify_membership(PARTICLE_GROUP_ID, true);
+                g.enable_interaction_with_static();
+                g
+            }
+            GenericDynamic => {
+                g.modify_membership(GENERIC_DYNAMIC_GROUP_ID, true);
+                g.enable_interaction_with_sensors();
+                g.modify_blacklist(PARTICLE_GROUP_ID, true);
+                g.enable_interaction_with_static();
+                g
+            }
+            GenericStatic => {
+                let mut g = RigidBodyCollisionGroups::new_static();
+                g.set_membership(&[]);
+                g.modify_whitelist(GENERIC_DYNAMIC_GROUP_ID, true);
+                g.modify_whitelist(PARTICLE_GROUP_ID, true);
+                g.enable_interaction_with_sensors();
+                g
+            }
+            EmbeddedKnife => {
+                g.enable_interaction_with_static();
+                g
+            }
+        }
+    }
+}
 
 // XXX rename?
 pub struct PhysicsThreadLink {
@@ -125,6 +171,10 @@ impl PhysicsThreadLink {
             pos2,
         });
     }
+
+    pub fn set_collision_groups_kind(&self, id: RigidBodyID, kind: CollisionGroupsKind) {
+        self.send.send(SetCollisionGroupsKind(id, kind));
+    }
 }
 
 pub enum MessageToPhysicsThread {
@@ -137,7 +187,7 @@ pub enum MessageToPhysicsThread {
         restitution: N,
         friction: N,
         translation: Vector<N>,
-        is_particle: bool,
+        collision_groups_kind: CollisionGroupsKind,
     },
     RemoveRigidBody(RigidBodyID),
     GetPosition(RigidBodyID),
@@ -160,6 +210,7 @@ pub enum MessageToPhysicsThread {
         pos1: Isometry<N>,
         pos2: Isometry<N>,
     },
+    SetCollisionGroupsKind(RigidBodyID, CollisionGroupsKind),
 
     AddSensor {
         id: SensorID,
@@ -270,7 +321,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 restitution,
                 friction,
                 translation,
-                is_particle,
+                collision_groups_kind,
             } => {
                 let mut body = RigidBody::new(shape, mass_properties, restitution, friction);
                 body.set_margin(BODY_MARGIN);
@@ -281,17 +332,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                     entity,
                 })));
 
-                let mut cg = *body.collision_groups();
-                if is_particle {
-                    cg.modify_membership(PARTICLE_GROUP_ID, true);
-                } else {
-                    cg.modify_membership(PARTICLE_GROUP_ID, false);
-                    cg.enable_interaction_with_sensors();
-                    if body.can_move() {
-                        cg.modify_blacklist(PARTICLE_GROUP_ID, true);
-                    }
-                }
-                body.set_collision_groups(cg);
+                body.set_collision_groups(collision_groups_kind.to_collision_groups());
 
                 let bh = physics_world.add_rigid_body(body);
                 rigid_body_id_map.insert(id, bh);
@@ -378,23 +419,20 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 body.apply_central_impulse(x);
             }
 
+            SetCollisionGroupsKind(id, k) => {
+                {
+                    let mut body = body_mut!(rigid_body_id_map, id);
+                    body.set_collision_groups(k.to_collision_groups());
+                }
+                physics_world.update_rigid_body_collision_groups(rigid_body_id_map.get(&id).unwrap().clone());
+            }
+
             AddFixedJoint {
                 body1,
                 body2,
                 pos1,
                 pos2,
             } => {
-                {
-                    let mut body1_h = body_mut!(rigid_body_id_map, body1);
-                    let mut cg = *body1_h.collision_groups();
-
-                    // XXX ncollide doesn't support updating after body is added
-                    cg.modify_membership(PARTICLE_GROUP_ID, true);
-
-                    body1_h.set_collision_groups(cg);
-                }
-                physics_world.update_rigid_body_collision_groups(rigid_body_id_map.get(&body1).unwrap().clone());
-
                 let anchor1 = Anchor::new(Some(rigid_body_id_map.get(&body1).unwrap().clone()), pos1);
                 let anchor2 = Anchor::new(Some(rigid_body_id_map.get(&body2).unwrap().clone()), pos2);
 

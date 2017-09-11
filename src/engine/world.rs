@@ -284,7 +284,7 @@ impl World {
             restitution: 0.2,
             friction: 0.3,
             translation: Vector::new(x, y),
-            is_particle: false,
+            collision_groups_kind: CollisionGroupsKind::GenericStatic,
         };
         self.physics_thread_link.lock().unwrap().send.send(message);
 
@@ -321,7 +321,7 @@ impl World {
             restitution: 0.0,
             friction: 0.5,
             translation: Vector::new(x, y),
-            is_particle: true,
+            collision_groups_kind: CollisionGroupsKind::Particle,
         };
         self.physics_thread_link.lock().unwrap().send.send(message);
         self.physics_thread_link
@@ -382,7 +382,7 @@ impl World {
             restitution: 0.2,
             friction: 0.1,
             translation: Vector::new(x, y),
-            is_particle: false,
+            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
         };
 
 
@@ -445,7 +445,7 @@ impl World {
             restitution: material.restitution(),
             friction: 0.6,
             translation: Vector::new(x, y),
-            is_particle: false,
+            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -492,7 +492,7 @@ impl World {
             restitution: 0.2,
             friction: 0.3,
             translation: Vector::new(x, y),
-            is_particle: false,
+            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -540,7 +540,7 @@ impl World {
             restitution: 0.2,
             friction: 0.1,
             translation: Vector::new(x, y),
-            is_particle: false,
+            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
         };
 
         let physics = self.physics_thread_link.lock().unwrap();
