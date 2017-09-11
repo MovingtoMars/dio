@@ -110,7 +110,7 @@ impl Level {
             .open(full_path)?;
 
         let text = serde_json::to_string_pretty(self)?;
-        file.write_all(text.as_ref())?;
+        writeln!(file, "{}", text)?;
 
         println!("Saved level `{}`", self.name);
 
