@@ -2,7 +2,7 @@ use super::*;
 
 use std::cmp;
 
-use specs::{self, Component, DenseVecStorage, HashMapStorage, VecStorage};
+use specs::{self, Component, DenseVecStorage, Entity, HashMapStorage, VecStorage};
 use nphysics::math::{Orientation, Vector};
 
 pub fn register_components(world: &mut specs::World) {

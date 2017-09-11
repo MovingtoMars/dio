@@ -2,6 +2,7 @@
 name = "dio"
 version = "0.1.0"
 dependencies = [
+ "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "chan 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.14.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",

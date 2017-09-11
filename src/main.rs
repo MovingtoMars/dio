@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+extern crate alga;
 extern crate chan;
 extern crate gfx_device_gl;
 extern crate nalgebra as na;

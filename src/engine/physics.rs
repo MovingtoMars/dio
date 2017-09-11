@@ -384,6 +384,16 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 pos1,
                 pos2,
             } => {
+                {
+                    let mut body1_h = body_mut!(rigid_body_id_map, body1);
+                    let mut cg = *body1_h.collision_groups();
+
+                    // XXX ncollide doesn't support updating after body is added
+                    cg.modify_membership(PARTICLE_GROUP_ID, true);
+
+                    body1_h.set_collision_groups(cg);
+                }
+
                 let anchor1 = Anchor::new(Some(rigid_body_id_map.get(&body1).unwrap().clone()), pos1);
                 let anchor2 = Anchor::new(Some(rigid_body_id_map.get(&body2).unwrap().clone()), pos2);
 

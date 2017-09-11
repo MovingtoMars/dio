@@ -3,8 +3,10 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use specs::{self, Join};
-use nphysics::math::{Isometry, Orientation, Point, Rotation, Vector};
+use nphysics::math::{Isometry, Orientation, Point, Rotation, Translation, Vector};
 use num::Zero;
+use na::UnitComplex;
+use alga::linear::AffineTransformation;
 
 pub type RS<'a, T> = specs::ReadStorage<'a, T>;
 pub type WS<'a, T> = specs::WriteStorage<'a, T>;
@@ -183,7 +185,7 @@ impl<'a> specs::System<'a> for TimeStopSystem {
 #[derive(SystemData)]
 struct KnifeData<'a> {
     rigid_body_idc: WS<'a, RigidBodyID>,
-    knifec: RS<'a, Knife>,
+    knifec: WS<'a, Knife>,
     hitpointsc: WS<'a, Hitpoints>,
     removec: WS<'a, Remove>,
 
@@ -193,57 +195,23 @@ struct KnifeData<'a> {
 
 struct KnifeSystem;
 
-fn spawn_blood(origin: Point<N>) -> Vec<Event> {
-    let mut res = Vec::new();
-
-    use rand;
-    use rand::distributions::{ChiSquared, IndependentSample, Normal, Range};
-
-    let mean_size = 0.065;
-
-    let size_dist = Normal::new(mean_size, 0.02);
-    let velocity_dist = Normal::new(0.0, 1.0);
-    let ttl_dist = ChiSquared::new(4.0);
-
-    let rng = &mut rand::thread_rng();
-
-    let max_num_dist = Range::new(2, 5);
-
-    for i in 0..max_num_dist.ind_sample(rng) {
-        let size = size_dist
-            .ind_sample(rng)
-            .max(0.055)
-            .max(BODY_MARGIN as f64)
-            .min(0.1);
-
-        // Bigger particles tend to live for less time
-        let ttl = ttl_dist.ind_sample(rng).min(30.0) * (mean_size / size);
-
-        res.push(Event::SpawnParticle {
-            rect: Rect::new(origin.x, origin.y, size as N, size as N),
-            velocity: Vector::new(
-                velocity_dist.ind_sample(rng) as N,
-                velocity_dist.ind_sample(rng) as N,
-            ),
-            ttl: ttl as N,
-        });
-    }
-
-    res
-}
-
 impl<'a> specs::System<'a> for KnifeSystem {
     type SystemData = KnifeData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
         let physics = data.c.physics_thread_link.lock().unwrap();
 
-        for (entity, &body_id, knife) in (&*data.entities, &data.rigid_body_idc, &data.knifec).join() {
+        for (entity, &body_id, knife) in (&*data.entities, &data.rigid_body_idc, &mut data.knifec).join() {
             if let Some(contacts) = data.c.contact_map.get(&body_id) {
                 for contact in contacts {
                     if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
                         data.c.push_events(spawn_blood(contact.position1));
                         hitpoints.damage(1);
+
+                        physics.set_lin_vel(body_id, Vector::new(0.0, 0.0));
+                        physics.set_ang_vel(body_id, Orientation::new(0.0));
+
+                        // add_fixed_joint_from_contact(&physics, &contact);
                         data.removec.insert(entity, Remove);
                         break;
                     }
@@ -309,3 +277,70 @@ impl<'a> specs::System<'a> for TimedRemoveSystem {
         }
     }
 }
+
+// Helper functions
+
+fn spawn_blood(origin: Point<N>) -> Vec<Event> {
+    let mut res = Vec::new();
+
+    use rand;
+    use rand::distributions::{ChiSquared, IndependentSample, Normal, Range};
+
+    let mean_size = 0.065;
+
+    let size_dist = Normal::new(mean_size, 0.02);
+    let velocity_dist = Normal::new(0.0, 1.0);
+    let ttl_dist = ChiSquared::new(4.0);
+
+    let rng = &mut rand::thread_rng();
+
+    let max_num_dist = Range::new(2, 5);
+
+    for i in 0..max_num_dist.ind_sample(rng) {
+        let size = size_dist
+            .ind_sample(rng)
+            .max(0.055)
+            .max(BODY_MARGIN as f64)
+            .min(0.1);
+
+        // Bigger particles tend to live for less time
+        let ttl = ttl_dist.ind_sample(rng).min(30.0) * (mean_size / size);
+
+        res.push(Event::SpawnParticle {
+            rect: Rect::new(origin.x, origin.y, size as N, size as N),
+            velocity: Vector::new(
+                velocity_dist.ind_sample(rng) as N,
+                velocity_dist.ind_sample(rng) as N,
+            ),
+            ttl: ttl as N,
+        });
+    }
+
+    res
+}
+
+// fn add_fixed_joint_from_contact(physics: &PhysicsThreadLink, contact: &Contact) {
+//     let body1 = contact.obj1.rigid_body_id;
+//     let body2 = contact.obj2.rigid_body_id;
+//
+//     let p1 = contact.position1 - physics.get_position(body1);
+//     let p2 = contact.position2 - physics.get_position(body2);
+//
+//     let r1 = physics.get_rotation(body1);
+//     let r2 = physics.get_rotation(body2);
+//
+//     let mut local_pos1 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
+//     let mut local_pos2 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
+//
+//     local_pos1.append_translation_mut(
+//         &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r1) * p1)),
+//     );
+//     local_pos1.append_rotation_mut(&UnitComplex::new(-r1));
+//
+//     local_pos2.append_translation_mut(
+//         &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r2) * p2)),
+//     );
+//     local_pos2.append_rotation_mut(&UnitComplex::new(-r2));
+//
+//     physics.add_fixed_joint(body1, body2, local_pos1, local_pos2);
+// }

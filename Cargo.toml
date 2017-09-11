@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["MovingtoMars <definitelynotliam@gmail.com>"]
 
 [dependencies]
+alga = "*"
 chan = "*"
 gfx_device_gl = "*"
 lazy_static = "*"
