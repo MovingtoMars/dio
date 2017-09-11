@@ -354,20 +354,15 @@ impl World {
                 0.0,
                 [1.0, 0.8, 0.1, 1.0],
             ))
-            .with(RenderItem::text(
-                0.0,
-                -hh * 1.5,
-                0.0,
-                [0.0, 0.0, 0.0, 1.0],
-                "Player",
-                16,
-            ));
+            .with(RenderItem::info(0.0, -hh * 1.3, 0.0, [0.0, 0.0, 0.0, 1.0]));
 
         let entity = self.specs_world
             .create_entity()
             .with(id)
             .with(renderable)
             .with(player)
+            .with(Hitpoints::new(5))
+            .with(Name("Player".into()))
             .build();
 
         let message = MessageToPhysicsThread::AddRigidBody {
@@ -469,12 +464,7 @@ impl World {
                 0.0,
                 [0.0, 0.0, 1.0, 1.0],
             ))
-            .with(RenderItem::hitpoints(
-                0.0,
-                -hh * 1.3,
-                0.0,
-                [0.0, 0.0, 0.0, 1.0],
-            ));
+            .with(RenderItem::info(0.0, -hh * 1.3, 0.0, [0.0, 0.0, 0.0, 1.0]));
 
         let entity = self.specs_world
             .create_entity()

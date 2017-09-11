@@ -22,6 +22,7 @@ pub fn register_components(world: &mut specs::World) {
         Knife,
         Remove,
         TimedRemove,
+        Name,
     }
 }
 
@@ -72,13 +73,13 @@ impl RenderItem {
         }
     }
 
-    pub fn hitpoints(rel_x: f32, rel_y: f32, rel_rotation: f32, color: [f32; 4]) -> Self {
+    pub fn info(rel_x: f32, rel_y: f32, rel_rotation: f32, color: [f32; 4]) -> Self {
         RenderItem {
             rel_x,
             rel_y,
             rel_rotation,
             color,
-            kind: RenderItemKind::Hitpoints,
+            kind: RenderItemKind::Info,
         }
     }
 }
@@ -87,7 +88,7 @@ impl RenderItem {
 pub enum RenderItemKind {
     Rectangle { w: f32, h: f32 },
     Text { text: String, size: u32 },
-    Hitpoints,
+    Info,
 }
 
 #[derive(Debug, Clone)]
@@ -231,5 +232,12 @@ impl Component for Remove {
 pub struct TimedRemove(pub N);
 
 impl Component for TimedRemove {
+    type Storage = HashMapStorage<Self>;
+}
+
+#[derive(Debug, Clone)]
+pub struct Name(pub String);
+
+impl Component for Name {
     type Storage = HashMapStorage<Self>;
 }

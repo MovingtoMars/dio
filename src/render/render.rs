@@ -3,7 +3,7 @@ use piston_window::character::CharacterCache;
 use specs::Join;
 
 use engine::World;
-use engine::{Hitpoints, RenderItem, RenderItemKind, Renderable};
+use engine::{Hitpoints, Name, RenderItem, RenderItemKind, Renderable};
 use interface::camera::Camera;
 use media::*;
 
@@ -60,24 +60,49 @@ pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &I
                         &text,
                     );
                 }
-                RenderItemKind::Hitpoints => {
+                RenderItemKind::Info => {
                     let hitpointsc = world.read_component::<Hitpoints>();
-                    let hp = hitpointsc.get(entity).unwrap();
+                    let hp = hitpointsc.get(entity);
 
-                    draw_text(
-                        win,
-                        input,
-                        cam,
-                        fonts,
-                        color,
-                        abs_x,
-                        abs_y,
-                        14,
-                        rotation,
-                        x,
-                        y,
-                        &format!("{}/{}", hp.current(), hp.max()),
-                    );
+                    let namec = world.read_component::<Name>();
+                    let name = namec.get(entity);
+
+                    let mut abs_y = abs_y;
+
+                    if let Some(hp) = hp {
+                        draw_text(
+                            win,
+                            input,
+                            cam,
+                            fonts,
+                            color,
+                            abs_x,
+                            abs_y,
+                            14,
+                            rotation,
+                            x,
+                            y,
+                            &format!("{}/{}", hp.current(), hp.max()),
+                        );
+                        abs_y -= cam.pixels_to_metres(16.0);
+                    }
+
+                    if let Some(name) = name {
+                        draw_text(
+                            win,
+                            input,
+                            cam,
+                            fonts,
+                            color,
+                            abs_x,
+                            abs_y,
+                            14,
+                            rotation,
+                            x,
+                            y,
+                            &format!("{}", name.0),
+                        );
+                    }
                 }
             }
         }
