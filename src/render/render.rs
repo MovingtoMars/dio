@@ -1,6 +1,6 @@
 use piston_window::*;
 use piston_window::character::CharacterCache;
-use specs::{self, Join};
+use specs::Join;
 
 use engine::World;
 use engine::{Hitpoints, RenderItem, RenderItemKind, Renderable};

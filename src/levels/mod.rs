@@ -1,6 +1,5 @@
 use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
-use std::path::Path;
 use std::error::Error as StdError;
 use std::fmt::{self, Display, Formatter};
 

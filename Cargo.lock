@@ -2,12 +2,11 @@
 name = "dio"
 version = "0.1.0"
 dependencies = [
- "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "chan 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.14.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide 0.13.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "nphysics2d 0.7.1 (git+https://github.com/MovingtoMars/nphysics.git)",
  "num 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.67.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -674,26 +673,26 @@ dependencies = [
 [[package]]
 name = "ncollide"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
- "ncollide_geometry 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_pipeline 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_procedural 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_transformation 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide_geometry 0.5.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_pipeline 0.12.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_procedural 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_transformation 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_utils 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
 ]
 
 [[package]]
 name = "ncollide_geometry"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_utils 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -701,7 +700,7 @@ dependencies = [
 [[package]]
 name = "ncollide_math"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -714,25 +713,25 @@ dependencies = [
 [[package]]
 name = "ncollide_pipeline"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_geometry 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide_geometry 0.5.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_utils 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "ncollide_procedural"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_utils 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -740,15 +739,15 @@ dependencies = [
 [[package]]
 name = "ncollide_transformation"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_geometry 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_procedural 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide_geometry 0.5.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_procedural 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
+ "ncollide_utils 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -756,12 +755,12 @@ dependencies = [
 [[package]]
 name = "ncollide_utils"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/MovingtoMars/ncollide.git#f228debabc9f63dafa6e2d2c4835cdaafd3f19ba"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -778,11 +777,11 @@ dependencies = [
 [[package]]
 name = "nphysics2d"
 version = "0.7.1"
-source = "git+https://github.com/MovingtoMars/nphysics.git#99b929cf92a16c05d34de829d1bf63b3819f7311"
+source = "git+https://github.com/MovingtoMars/nphysics.git#c6b39b0a3e0170b36caa51cf61ea1e18ce468e3f"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ncollide 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ncollide 0.13.0 (git+https://github.com/MovingtoMars/ncollide.git)",
  "num-traits 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1607,13 +1606,13 @@ dependencies = [
 "checksum memmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "69253224aa10070855ea8fe9dbe94a03fc2b1d7930bb340c9e586a7513716fea"
 "checksum mopa 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 "checksum nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2985c9ca65da8e6b88be08d7472feaa03afbda2438db725c4bd3a75c3e35ee6f"
-"checksum ncollide 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)" = "af8b50392e3ca12693839344f085b00f088033901e4345b5820514f721431ca6"
-"checksum ncollide_geometry 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2007774f0e5807e35f8b0b6f234efb042093ab4e86c86bcc4af4d17fa98c3efd"
-"checksum ncollide_math 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "64b88168c4ddad2e1123299bfb529c4de73383520caf45ccb5a9c9129fdcbe3d"
-"checksum ncollide_pipeline 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2387bac8d48262118c5be50a7d7e61266b7c8b4925611176777b882c84e963c3"
-"checksum ncollide_procedural 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "63441d1763a6880894ccf2f5d9c81545ee426538119c6e6dc0768c8c8ab325a1"
-"checksum ncollide_transformation 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "348a4684b4e409f0e4b9d649afa4460a09fcefc6083113a1483008db8ada8845"
-"checksum ncollide_utils 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2b0bf88903f5ee3f6e1c2a86e3aaff81d8fb4315ee4ccb52ff70cdd0fdbf0425"
+"checksum ncollide 0.13.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
+"checksum ncollide_geometry 0.5.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
+"checksum ncollide_math 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
+"checksum ncollide_pipeline 0.12.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
+"checksum ncollide_procedural 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
+"checksum ncollide_transformation 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
+"checksum ncollide_utils 0.8.0 (git+https://github.com/MovingtoMars/ncollide.git)" = "<none>"
 "checksum nodrop 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "52cd74cd09beba596430cc6e3091b74007169a56246e1262f0ba451ea95117b2"
 "checksum nphysics2d 0.7.1 (git+https://github.com/MovingtoMars/nphysics.git)" = "<none>"
 "checksum num 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "a311b77ebdc5dd4cf6449d81e4135d9f0e3b153839ac90e648a8ef538f923525"

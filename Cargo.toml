@@ -4,12 +4,10 @@ version = "0.1.0"
 authors = ["MovingtoMars <definitelynotliam@gmail.com>"]
 
 [dependencies]
-alga = "*"
 chan = "*"
 gfx_device_gl = "*"
 lazy_static = "*"
 nalgebra = "*"
-ncollide = "*"
 num = "*"
 piston_window = "0.67.0"
 rand = "*"
@@ -22,5 +20,8 @@ shred-derive = "*"
 specs = "0.9"
 
 [dependencies.nphysics2d]
-# path = "../nphysics/build/nphysics2d"
 git = "https://github.com/MovingtoMars/nphysics.git"
+
+
+[dependencies.ncollide]
+git = "https://github.com/MovingtoMars/ncollide.git"

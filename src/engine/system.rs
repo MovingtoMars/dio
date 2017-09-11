@@ -3,10 +3,9 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use specs::{self, Join};
-use nphysics::math::{Isometry, Orientation, Point, Rotation, Translation, Vector};
+use nphysics::math::{Isometry, Orientation, Point, Rotation, Vector};
 use num::Zero;
 use na::UnitComplex;
-use alga::linear::AffineTransformation;
 
 pub type RS<'a, T> = specs::ReadStorage<'a, T>;
 pub type WS<'a, T> = specs::WriteStorage<'a, T>;
@@ -216,8 +215,8 @@ impl<'a> specs::System<'a> for KnifeSystem {
                         physics.set_lin_vel(body_id, Vector::new(0.0, 0.0));
                         physics.set_ang_vel(body_id, Orientation::new(0.0));
 
-                        // add_fixed_joint_from_contact(&physics, &contact);
-                        data.removec.insert(entity, Remove);
+                        add_fixed_joint_from_contact(&physics, &contact);
+                        // data.removec.insert(entity, Remove);
                         break;
                     }
                 }
@@ -334,18 +333,14 @@ fn add_fixed_joint_from_contact(physics: &PhysicsThreadLink, contact: &Contact) 
     let r1 = physics.get_rotation(body1);
     let r2 = physics.get_rotation(body2);
 
-    let mut local_pos1 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
-    let mut local_pos2 = Isometry::new(Vector::new(0.0, 0.0), 0.0);
+    let mut local_pos1 = Isometry::new(p1, 0.0);
+    let mut local_pos2 = Isometry::new(p2, 0.0);
 
-    local_pos1.append_translation_mut(
-        &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r1) * p1)),
-    );
-    local_pos1.append_rotation_mut(&UnitComplex::new(-(r1 - r2)));
+    local_pos1.append_rotation_mut(&Rotation::new(-r1));
+    local_pos1.rotation = UnitComplex::new(-r1);
 
-    local_pos2.append_translation_mut(
-        &(Translation::from_vector(Isometry::new(Vector::new(0.0, 0.0), -r2) * p2)),
-    );
-    // local_pos2.append_rotation_mut(&UnitComplex::new(r2));
+    local_pos2.append_rotation_mut(&Rotation::new(-r2));
+    local_pos2.rotation = UnitComplex::new(-r2);
 
     physics.add_fixed_joint(body1, body2, local_pos1, local_pos2);
 }

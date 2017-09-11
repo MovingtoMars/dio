@@ -393,6 +393,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
                     body1_h.set_collision_groups(cg);
                 }
+                physics_world.update_rigid_body_collision_groups(rigid_body_id_map.get(&body1).unwrap().clone());
 
                 let anchor1 = Anchor::new(Some(rigid_body_id_map.get(&body1).unwrap().clone()), pos1);
                 let anchor2 = Anchor::new(Some(rigid_body_id_map.get(&body2).unwrap().clone()), pos2);
