@@ -210,7 +210,7 @@ fn process_event(
                     Key::A => world.set_player_moving_left(false),
                     Key::D => world.set_player_moving_right(false),
                     Key::C => world.set_player_picking_up(false),
-                    Key::T => if world.stop_time(5.0) {
+                    Key::F => if world.stop_time(5.0) {
                         stats.num_time_stops += 1;
                     },
                     _ => {}
