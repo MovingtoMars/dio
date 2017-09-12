@@ -344,7 +344,7 @@ impl World {
 
         let density = 500.0;
 
-        let player = Player::new(sensor_id);
+        let player = Player::new(sensor_id, 6);
 
         let renderable = Renderable::new(x, y, 0.0)
             .with(RenderItem::rectangle(
@@ -489,6 +489,20 @@ impl World {
         self.physics_thread_link.lock().unwrap().send.send(message);
 
         entity
+    }
+
+    pub fn player_throw_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Option<Entity> {
+        {
+            let mut playerc = self.specs_world.write::<Player>();
+            let player = playerc.get_mut(self.player).unwrap();
+            if player.num_knives() > 0 {
+                player.dec_knives();
+            } else {
+                return None;
+            }
+        }
+
+        Some(self.new_knife(x, y, velocity))
     }
 
     pub fn new_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Entity {

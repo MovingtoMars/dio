@@ -189,6 +189,7 @@ struct KnifeData<'a> {
     knifec: WS<'a, Knife>,
     hitpointsc: WS<'a, Hitpoints>,
     removec: WS<'a, Remove>,
+    playerc: WS<'a, Player>,
 
     entities: specs::Entities<'a>,
     c: specs::Fetch<'a, SystemContext>,
@@ -213,6 +214,7 @@ impl<'a> specs::System<'a> for KnifeSystem {
                 if query::contact(&player_pos, &*player_shape, &knife_pos, &*knife_shape, 0.05).is_some() {
                     // Pick up the knife
                     data.removec.insert(entity, Remove);
+                    data.playerc.get_mut(data.c.player).unwrap().inc_knives();
                 }
             } else {
                 if let Some(contacts) = data.c.contact_map.get(&body_id) {
@@ -227,7 +229,6 @@ impl<'a> specs::System<'a> for KnifeSystem {
 
                             add_fixed_joint_from_contact(&physics, &contact);
                             physics.set_collision_groups_kind(body_id, CollisionGroupsKind::EmbeddedKnife);
-                            // data.removec.insert(entity, Remove);
                             break;
                         }
                     }

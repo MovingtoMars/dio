@@ -146,7 +146,7 @@ fn spawn_knife(world: &mut World, cam: &mut Camera) {
 
     let vel = Vector::new(kx - sx, ky - sy).normalize() * KNIFE_INIT_SPEED;
 
-    world.new_knife(sx, sy, vel);
+    world.player_throw_knife(sx, sy, vel);
 }
 
 // if returns false, exit event loop

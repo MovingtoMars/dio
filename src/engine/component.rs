@@ -130,22 +130,45 @@ pub struct Player {
     pub touching_ground: bool,
     pub release_jump: bool,
 
+    num_knives: usize,
+    max_num_knives: usize,
+
     sensor_id: SensorID,
 }
 
 impl Player {
-    pub fn new(sensor_id: SensorID) -> Self {
+    pub fn new(sensor_id: SensorID, max_num_knives: usize) -> Self {
         Player {
             moving_right: false,
             moving_left: false,
             touching_ground: false,
             release_jump: false,
+
+            num_knives: max_num_knives,
+            max_num_knives,
+
             sensor_id,
         }
     }
 
     pub fn sensor_id(&self) -> SensorID {
         self.sensor_id
+    }
+
+    pub fn dec_knives(&mut self) {
+        if self.num_knives >= 1 {
+            self.num_knives -= 1;
+        }
+    }
+
+    pub fn inc_knives(&mut self) {
+        if self.num_knives < self.max_num_knives {
+            self.num_knives += 1;
+        }
+    }
+
+    pub fn num_knives(&self) -> usize {
+        self.num_knives
     }
 }
 
