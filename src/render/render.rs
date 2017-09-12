@@ -8,6 +8,8 @@ use interface::camera::Camera;
 use media::*;
 
 pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &Input, fonts: &mut Fonts) {
+    let win_draw_size = win.draw_size();
+
     win.draw_2d(input, |c, g| {
         clear([0.0; 4], g);
 
@@ -121,6 +123,25 @@ pub fn render(win: &mut PistonWindow, cam: &Camera, world: &mut World, input: &I
             );
         });
     }
+
+    let player = world.clone_player_component();
+    let knives_text = &format!(
+        "Knives: {}/{}",
+        player.num_knives(),
+        player.max_num_knives()
+    );
+    let width = fonts.bold.glyphs.width(16, knives_text);
+
+    win.draw_2d(input, |c, g| {
+        text(
+            [0.0, 0.0, 0.0, 1.0],
+            18,
+            knives_text,
+            &mut fonts.bold.glyphs,
+            c.transform.trans(20.0, win_draw_size.height as f64 - 20.0),
+            g,
+        );
+    });
 }
 
 pub struct Fonts {

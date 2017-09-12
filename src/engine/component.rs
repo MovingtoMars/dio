@@ -170,6 +170,10 @@ impl Player {
     pub fn num_knives(&self) -> usize {
         self.num_knives
     }
+
+    pub fn max_num_knives(&self) -> usize {
+        self.max_num_knives
+    }
 }
 
 impl Component for Player {

@@ -104,6 +104,14 @@ impl World {
         self.specs_world.read::<T>()
     }
 
+    pub fn clone_player_component(&self) -> Player {
+        self.specs_world
+            .read::<Player>()
+            .get(self.player)
+            .unwrap()
+            .clone()
+    }
+
     pub fn entities(&self) -> specs::Fetch<specs::EntitiesRes> {
         self.specs_world.entities()
     }
