@@ -17,6 +17,7 @@ use chan;
 use self::MessageToPhysicsThread::*;
 use self::MessageFromPhysicsThread::*;
 
+pub const PLAYER_GROUP_ID: usize = 1;
 pub const GENERIC_DYNAMIC_GROUP_ID: usize = 2;
 pub const PARTICLE_GROUP_ID: usize = 4;
 
@@ -26,6 +27,8 @@ pub enum CollisionGroupsKind {
     GenericDynamic,
     GenericStatic,
     EmbeddedKnife,
+    Knife,
+    Player,
 }
 
 impl CollisionGroupsKind {
@@ -60,6 +63,16 @@ impl CollisionGroupsKind {
                 g.enable_interaction_with_static();
                 g
             }
+            Knife => {
+                let mut g = GenericDynamic.to_collision_groups();
+                g.modify_blacklist(PLAYER_GROUP_ID, true);
+                g
+            }
+            Player => {
+                let mut g = GenericDynamic.to_collision_groups();
+                g.modify_membership(PLAYER_GROUP_ID, true);
+                g
+            }
         }
     }
 }
@@ -73,9 +86,10 @@ pub struct PhysicsThreadLink {
 impl PhysicsThreadLink {
     pub fn step(&self, dt: N) {
         self.send.send(Step(dt));
+        self.recv.recv().unwrap().unwrap_finish_step();
     }
 
-    pub fn get_position(&self, id: RigidBodyID) -> Point<N> {
+    pub fn get_position(&self, id: RigidBodyID) -> Isometry<N> {
         self.send.send(GetPosition(id));
         self.recv.recv().unwrap().unwrap_position()
     }
@@ -175,6 +189,11 @@ impl PhysicsThreadLink {
     pub fn set_collision_groups_kind(&self, id: RigidBodyID, kind: CollisionGroupsKind) {
         self.send.send(SetCollisionGroupsKind(id, kind));
     }
+
+    pub fn get_shape_handle(&self, id: RigidBodyID) -> ShapeHandle<Point<N>, Isometry<N>> {
+        self.send.send(GetShapeHandle(id));
+        self.recv.recv().unwrap().unwrap_shape_handle()
+    }
 }
 
 pub enum MessageToPhysicsThread {
@@ -221,10 +240,12 @@ pub enum MessageToPhysicsThread {
     GetBodiesIntersectingSensor(SensorID),
 
     GetContacts,
+    GetShapeHandle(RigidBodyID),
 }
 
 pub enum MessageFromPhysicsThread {
-    Position(Point<N>),
+    FinishStep,
+    Position(Isometry<N>),
     HalfExtents(N, N),
     Rotation(N),
     LinVel(Vector<N>),
@@ -232,10 +253,18 @@ pub enum MessageFromPhysicsThread {
     InvMass(N),
     BodiesIntersectingSensor(Vec<UserData>),
     Contacts(Vec<Contact>),
+    ShapeHandle(ShapeHandle<Point<N>, Isometry<N>>),
 }
 
 impl MessageFromPhysicsThread {
-    pub fn unwrap_position(self) -> Point<N> {
+    pub fn unwrap_finish_step(self) {
+        match self {
+            FinishStep => {}
+            _ => panic!("Expected FinishStep"),
+        }
+    }
+
+    pub fn unwrap_position(self) -> Isometry<N> {
         match self {
             Position(x) => x,
             _ => panic!("Expected Position"),
@@ -290,6 +319,13 @@ impl MessageFromPhysicsThread {
             _ => panic!("Expected Contacts"),
         }
     }
+
+    pub fn unwrap_shape_handle(self) -> ShapeHandle<Point<N>, Isometry<N>> {
+        match self {
+            ShapeHandle(x) => x,
+            _ => panic!("Expected ShapeHandle"),
+        }
+    }
 }
 
 pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPhysicsThread>, send: chan::Sender<MessageFromPhysicsThread>) {
@@ -311,6 +347,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
         match recv_message {
             Step(dt) => {
                 physics_world.step(dt);
+                send.send(FinishStep);
             }
 
             AddRigidBody {
@@ -344,6 +381,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                     physics_world.remove_rigid_body(&bh);
                 } else {
                     // XXX
+                    panic!("oh no");
                 }
             }
 
@@ -356,7 +394,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
             GetPosition(id) => {
                 let body = body!(rigid_body_id_map, id);
-                send.send(Position(body.position_center()));
+                send.send(Position(*body.position()));
             }
 
             GetRotation(id) => {
@@ -512,6 +550,8 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
 
                 send.send(Contacts(contacts));
             }
+
+            GetShapeHandle(id) => send.send(ShapeHandle(body!(rigid_body_id_map, id).shape().clone())),
         }
     }
 }

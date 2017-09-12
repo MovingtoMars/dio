@@ -144,6 +144,7 @@ impl World {
             time_is_stopped: self.time_stop_remaining.is_some(),
             contact_map,
             events: events.clone(),
+            player: self.player,
         };
         self.specs_world.add_resource(context.clone());
 
@@ -377,7 +378,7 @@ impl World {
             restitution: 0.2,
             friction: 0.1,
             translation: Vector::new(x, y),
-            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
+            collision_groups_kind: CollisionGroupsKind::Player,
         };
 
 
@@ -530,7 +531,7 @@ impl World {
             restitution: 0.2,
             friction: 0.1,
             translation: Vector::new(x, y),
-            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
+            collision_groups_kind: CollisionGroupsKind::Knife,
         };
 
         let physics = self.physics_thread_link.lock().unwrap();

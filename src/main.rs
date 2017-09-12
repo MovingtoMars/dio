@@ -134,13 +134,15 @@ fn spawn_knife(world: &mut World, cam: &mut Camera) {
         .lock()
         .unwrap()
         .get_position(world.player_rigid_body_id());
+    let px = pos.translation.vector.x;
+    let py = pos.translation.vector.y;
 
-    let sx = if kx < pos.x {
-        pos.x - PLAYER_HALF_WIDTH * 1.6
+    let sx = if kx < px {
+        px - PLAYER_HALF_WIDTH * 1.6
     } else {
-        pos.x + PLAYER_HALF_WIDTH * 1.6
+        px + PLAYER_HALF_WIDTH * 1.6
     };
-    let sy = pos.y - PLAYER_HALF_HEIGHT * 0.32;
+    let sy = py - PLAYER_HALF_HEIGHT * 0.32;
 
     let vel = Vector::new(kx - sx, ky - sy).normalize() * KNIFE_INIT_SPEED;
 

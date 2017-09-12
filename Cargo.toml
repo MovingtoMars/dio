@@ -21,7 +21,7 @@ specs = "0.9"
 
 [dependencies.nphysics2d]
 git = "https://github.com/MovingtoMars/nphysics.git"
-
+# path = "../nphysics/build/nphysics2d"
 
 [dependencies.ncollide]
 git = "https://github.com/MovingtoMars/ncollide.git"

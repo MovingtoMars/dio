@@ -777,7 +777,7 @@ dependencies = [
 [[package]]
 name = "nphysics2d"
 version = "0.7.1"
-source = "git+https://github.com/MovingtoMars/nphysics.git#c6b39b0a3e0170b36caa51cf61ea1e18ce468e3f"
+source = "git+https://github.com/MovingtoMars/nphysics.git#8fe4496950c6a17cde8100e296a5c248764931ff"
 dependencies = [
  "alga 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use specs::{self, Join};
 use nphysics::math::{Isometry, Orientation, Point, Rotation, Vector};
+use ncollide::query;
 use num::Zero;
 use na::UnitComplex;
 
@@ -17,6 +18,7 @@ pub struct SystemContext {
     pub time_is_stopped: bool,
     pub contact_map: HashMap<RigidBodyID, Vec<Contact>>,
     pub events: Arc<Mutex<Vec<Event>>>,
+    pub player: specs::Entity,
 }
 
 impl SystemContext {
@@ -68,8 +70,8 @@ impl<'a> specs::System<'a> for UpdateRenderableFromRigidBodyIDSystem {
         for (&rigidbodyid, renderable) in (&data.rigidbodyidc, &mut data.renderablec).join() {
             let pos = physics_thread_link.get_position(rigidbodyid);
 
-            renderable.x = pos.x;
-            renderable.y = pos.y;
+            renderable.x = pos.translation.vector.x;
+            renderable.y = pos.translation.vector.y;
             renderable.rotation = physics_thread_link.get_rotation(rigidbodyid);
         }
     }
@@ -202,23 +204,32 @@ impl<'a> specs::System<'a> for KnifeSystem {
 
         for (entity, &body_id, knife) in (&*data.entities, &data.rigid_body_idc, &mut data.knifec).join() {
             if knife.stuck_into_entity.is_some() {
-                continue;
-            }
+                let player_body_id = *data.rigid_body_idc.get(data.c.player).unwrap();
+                let player_pos = physics.get_position(player_body_id);
+                let player_shape = physics.get_shape_handle(player_body_id);
+                let knife_pos = physics.get_position(body_id);
+                let knife_shape = physics.get_shape_handle(body_id);
 
-            if let Some(contacts) = data.c.contact_map.get(&body_id) {
-                for contact in contacts {
-                    if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
-                        knife.stuck_into_entity = Some(contact.obj2.entity);
-                        data.c.push_events(spawn_blood(contact.position1));
-                        hitpoints.damage(1);
+                if query::contact(&player_pos, &*player_shape, &knife_pos, &*knife_shape, 0.05).is_some() {
+                    // Pick up the knife
+                    data.removec.insert(entity, Remove);
+                }
+            } else {
+                if let Some(contacts) = data.c.contact_map.get(&body_id) {
+                    for contact in contacts {
+                        if let Some(hitpoints) = data.hitpointsc.get_mut(contact.obj2.entity) {
+                            knife.stuck_into_entity = Some(contact.obj2.entity);
+                            data.c.push_events(spawn_blood(contact.position1));
+                            hitpoints.damage(1);
 
-                        physics.set_lin_vel(body_id, Vector::new(0.0, 0.0));
-                        physics.set_ang_vel(body_id, Orientation::new(0.0));
+                            physics.set_lin_vel(body_id, Vector::new(0.0, 0.0));
+                            physics.set_ang_vel(body_id, Orientation::new(0.0));
 
-                        add_fixed_joint_from_contact(&physics, &contact);
-                        physics.set_collision_groups_kind(body_id, CollisionGroupsKind::EmbeddedKnife);
-                        // data.removec.insert(entity, Remove);
-                        break;
+                            add_fixed_joint_from_contact(&physics, &contact);
+                            physics.set_collision_groups_kind(body_id, CollisionGroupsKind::EmbeddedKnife);
+                            // data.removec.insert(entity, Remove);
+                            break;
+                        }
                     }
                 }
             }
@@ -328,8 +339,8 @@ fn add_fixed_joint_from_contact(physics: &PhysicsThreadLink, contact: &Contact) 
     let body1 = contact.obj1.rigid_body_id;
     let body2 = contact.obj2.rigid_body_id;
 
-    let p1 = contact.position1 - physics.get_position(body1);
-    let p2 = contact.position2 - physics.get_position(body2);
+    let p1 = contact.position1 - Point::from_coordinates(physics.get_position(body1).translation.vector);
+    let p2 = contact.position2 - Point::from_coordinates(physics.get_position(body2).translation.vector);
 
     let r1 = physics.get_rotation(body1);
     let r2 = physics.get_rotation(body2);
