@@ -159,7 +159,7 @@ impl World {
         let mut dispatcher = register_systems(specs::DispatcherBuilder::new()).build();
         dispatcher.dispatch(&mut self.specs_world.res);
 
-        self.specs_world.maintain();
+        // self.specs_world.maintain();
 
         for event in &*events.lock().unwrap() {
             self.run_event(event);
@@ -579,6 +579,14 @@ impl World {
             .get_mut(self.player)
             .unwrap()
             .moving_right = x;
+    }
+
+    pub fn set_player_picking_up(&mut self, x: bool) {
+        self.specs_world
+            .write::<Player>()
+            .get_mut(self.player)
+            .unwrap()
+            .picking_up = x;
     }
 
     pub fn set_player_jumping(&mut self, jumping: bool) {

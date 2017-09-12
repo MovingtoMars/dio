@@ -129,6 +129,7 @@ pub struct Player {
     pub moving_left: bool,
     pub touching_ground: bool,
     pub release_jump: bool,
+    pub picking_up: bool,
 
     num_knives: usize,
     max_num_knives: usize,
@@ -143,6 +144,7 @@ impl Player {
             moving_left: false,
             touching_ground: false,
             release_jump: false,
+            picking_up: false,
 
             num_knives: max_num_knives,
             max_num_knives,

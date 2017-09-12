@@ -205,17 +205,7 @@ impl<'a> specs::System<'a> for KnifeSystem {
 
         for (entity, &body_id, knife) in (&*data.entities, &data.rigid_body_idc, &mut data.knifec).join() {
             if knife.stuck_into_entity.is_some() {
-                let player_body_id = *data.rigid_body_idc.get(data.c.player).unwrap();
-                let player_pos = physics.get_position(player_body_id);
-                let player_shape = physics.get_shape_handle(player_body_id);
-                let knife_pos = physics.get_position(body_id);
-                let knife_shape = physics.get_shape_handle(body_id);
-
-                if query::contact(&player_pos, &*player_shape, &knife_pos, &*knife_shape, 0.05).is_some() {
-                    // Pick up the knife
-                    data.removec.insert(entity, Remove);
-                    data.playerc.get_mut(data.c.player).unwrap().inc_knives();
-                }
+                // pass
             } else {
                 if let Some(contacts) = data.c.contact_map.get(&body_id) {
                     for contact in contacts {
@@ -232,6 +222,20 @@ impl<'a> specs::System<'a> for KnifeSystem {
                             break;
                         }
                     }
+                }
+            }
+
+            if data.playerc.get(data.c.player).unwrap().picking_up {
+                let player_body_id = *data.rigid_body_idc.get(data.c.player).unwrap();
+                let player_pos = physics.get_position(player_body_id);
+                let player_shape = physics.get_shape_handle(player_body_id);
+                let knife_pos = physics.get_position(body_id);
+                let knife_shape = physics.get_shape_handle(body_id);
+
+                if query::contact(&player_pos, &*player_shape, &knife_pos, &*knife_shape, 0.05).is_some() {
+                    // Pick up the knife
+                    data.removec.insert(entity, Remove);
+                    data.playerc.get_mut(data.c.player).unwrap().inc_knives();
                 }
             }
         }
