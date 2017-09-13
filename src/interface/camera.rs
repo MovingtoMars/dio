@@ -1,7 +1,7 @@
 pub struct Camera {
     // the position of the world which is at the centre of the screen (in metres)
-    pub x: f32,
-    pub y: f32,
+    x: f32,
+    y: f32,
 
     // the position in the window where the mouse pointer is
     pub mouse_x: f64,
@@ -26,8 +26,35 @@ impl Camera {
         }
     }
 
+    pub fn set_pos_smooth(&mut self, x: f32, y: f32) {
+        let (vw, vh) = self.game_viewport_size();
+
+        let scroll_window_w = vw * 0.1;
+        let scroll_window_h = vh * 0.1;
+
+        let dx = x - self.x;
+        let dy = y - self.y;
+
+        if dx.abs() > scroll_window_w {
+            self.x += (dx - scroll_window_w * dx.signum()) * 0.1;
+        }
+
+        if dy.abs() > scroll_window_h {
+            self.y += (dy - scroll_window_h * dy.signum()) * 0.1;
+        }
+    }
+
+    pub fn set_window_dimensions(&mut self, w: u32, h: u32) {
+        self.win_w = w;
+        self.win_h = h;
+    }
+
     pub fn pos(&self) -> (f32, f32) {
         (self.x, self.y)
+    }
+
+    pub fn game_viewport_size(&self) -> (f32, f32) {
+        self.pair_pixels_to_metres(self.win_w as f64, self.win_h as f64)
     }
 
     pub fn metres_to_pixels(&self, val: f32) -> f64 {

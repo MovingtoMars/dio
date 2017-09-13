@@ -161,6 +161,18 @@ fn process_event(
 ) -> bool {
     if let &Input::Update(UpdateArgs { dt }) = event {
         world.tick(dt as f32);
+
+        let win_draw_size = window.draw_size();
+        cam.set_window_dimensions(win_draw_size.width, win_draw_size.height);
+        let physics = world.physics_thread_link();
+        let pos = physics
+            .lock()
+            .unwrap()
+            .get_position(world.player_rigid_body_id());
+        let px = pos.translation.vector.x;
+        let py = pos.translation.vector.y;
+        cam.set_pos_smooth(px, py);
+
         stats.total_game_time += dt;
         return true;
     }
