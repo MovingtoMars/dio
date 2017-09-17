@@ -59,7 +59,7 @@ impl CollisionGroupsKind {
                 g.set_membership(&[]);
                 g.modify_whitelist(GENERIC_DYNAMIC_GROUP_ID, true);
                 g.modify_whitelist(PARTICLE_GROUP_ID, true);
-                g.modify_whitelist(DEAD_ENEMY_GROUP_ID, true);
+                // g.modify_whitelist(DEAD_ENEMY_GROUP_ID, true);
                 g.enable_interaction_with_sensors();
                 g
             }
@@ -70,7 +70,7 @@ impl CollisionGroupsKind {
             Knife => {
                 let mut g = GenericDynamic.to_collision_groups();
                 g.modify_blacklist(PLAYER_GROUP_ID, true);
-                g.modify_whitelist(DEAD_ENEMY_GROUP_ID, true);
+                // g.modify_whitelist(DEAD_ENEMY_GROUP_ID, true);
                 g
             }
             Player => {
@@ -80,11 +80,13 @@ impl CollisionGroupsKind {
             }
             DeadEnemy => {
                 // g.set_whitelist(&[]);
-                g.enable_interaction_with_static();
-                g.disable_interaction_with_sensors();
-                g.modify_membership(DEAD_ENEMY_GROUP_ID, true);
-                g.modify_blacklist(PARTICLE_GROUP_ID, true);
-                g
+                // g.enable_interaction_with_static();
+                // g.disable_interaction_with_sensors();
+                // g.modify_membership(DEAD_ENEMY_GROUP_ID, true);
+                // g.modify_blacklist(PARTICLE_GROUP_ID, true);
+                // g
+
+                GenericDynamic.to_collision_groups()
             }
         }
     }
