@@ -222,6 +222,7 @@ pub enum MessageToPhysicsThread {
         friction: N,
         translation: Vector<N>,
         collision_groups_kind: CollisionGroupsKind,
+        ccd: Option<N>, // Some(threshold) means clamping if more then threshold movement *in a single step*
     },
     RemoveRigidBody(RigidBodyID),
     GetPosition(RigidBodyID),
@@ -374,6 +375,7 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 friction,
                 translation,
                 collision_groups_kind,
+                ccd,
             } => {
                 let mut body = RigidBody::new(shape, mass_properties, restitution, friction);
                 body.set_margin(BODY_MARGIN);
@@ -387,6 +389,9 @@ pub fn physics_thread_inner(gravity: Vector<N>, recv: chan::Receiver<MessageToPh
                 body.set_collision_groups(collision_groups_kind.to_collision_groups());
 
                 let bh = physics_world.add_rigid_body(body);
+                if let Some(ccd_threshold) = ccd {
+                    physics_world.add_ccd_to(&bh, ccd_threshold, true);
+                }
                 rigid_body_id_map.insert(id, bh);
             }
 

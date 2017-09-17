@@ -294,6 +294,7 @@ impl World {
             friction: 0.3,
             translation: Vector::new(x, y),
             collision_groups_kind: CollisionGroupsKind::GenericStatic,
+            ccd: None,
         };
         self.physics_thread_link.lock().unwrap().send.send(message);
 
@@ -331,6 +332,7 @@ impl World {
             friction: 0.5,
             translation: Vector::new(x, y),
             collision_groups_kind: CollisionGroupsKind::Particle,
+            ccd: None,
         };
         self.physics_thread_link.lock().unwrap().send.send(message);
         self.physics_thread_link
@@ -387,6 +389,7 @@ impl World {
             friction: 0.1,
             translation: Vector::new(x, y),
             collision_groups_kind: CollisionGroupsKind::Player,
+            ccd: None,
         };
 
 
@@ -450,6 +453,7 @@ impl World {
             friction: 0.6,
             translation: Vector::new(x, y),
             collision_groups_kind: CollisionGroupsKind::GenericDynamic,
+            ccd: None,
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -493,6 +497,7 @@ impl World {
             friction: 0.3,
             translation: Vector::new(x, y),
             collision_groups_kind: CollisionGroupsKind::GenericDynamic,
+            ccd: None,
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -532,6 +537,7 @@ impl World {
             friction: 0.1,
             translation: pos,
             collision_groups_kind: CollisionGroupsKind::GenericDynamic,
+            ccd: Some(0.04),
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
@@ -598,6 +604,7 @@ impl World {
             friction: 0.1,
             translation: Vector::new(x, y),
             collision_groups_kind: CollisionGroupsKind::Knife,
+            ccd: Some(0.04),
         };
 
         let physics = self.physics_thread_link.lock().unwrap();
