@@ -309,7 +309,6 @@ struct BasicEnemyData<'a> {
     hitpointsc: RS<'a, Hitpoints>,
     body_idc: WS<'a, RigidBodyID>,
 
-    entities: specs::Entities<'a>,
     c: specs::Fetch<'a, SystemContext>,
 }
 
