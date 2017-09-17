@@ -48,8 +48,13 @@ pub fn register_systems<'a, 'b>(d: specs::DispatcherBuilder<'a, 'b>) -> specs::D
     let d = d.add(BasicEnemySystem, "BasicEnemySystem", &[]);
 
     let d = d.add_barrier();
+    let d = d.add(RemoveOOBEntitiesSystem, "RemoveOOBEntitiesSystem", &[]);
     let d = d.add(TimedRemoveSystem, "TimedRemoveSystem", &[]);
-    let d = d.add(RemoveSystem, "RemoveSystem", &["TimedRemoveSystem"]);
+    let d = d.add(
+        RemoveSystem,
+        "RemoveSystem",
+        &["TimedRemoveSystem", "RemoveOOBEntitiesSystem"],
+    );
 
     d
 }
@@ -323,6 +328,39 @@ impl<'a> specs::System<'a> for BasicEnemySystem {
                 enemy.is_dead = true;
                 let physics = data.c.physics_thread_link.lock().unwrap();
                 physics.set_collision_groups_kind(body_id, CollisionGroupsKind::DeadEnemy);
+            }
+        }
+    }
+}
+
+
+#[derive(SystemData)]
+struct RemoveOOBEntitiesData<'a> {
+    body_idc: WS<'a, RigidBodyID>,
+    removec: WS<'a, Remove>,
+
+    entities: specs::Entities<'a>,
+    c: specs::Fetch<'a, SystemContext>,
+}
+
+struct RemoveOOBEntitiesSystem;
+
+impl<'a> specs::System<'a> for RemoveOOBEntitiesSystem {
+    type SystemData = RemoveOOBEntitiesData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        for (entity, &body_id) in (&*data.entities, &data.body_idc).join() {
+            let pos = data.c
+                .physics_thread_link
+                .lock()
+                .unwrap()
+                .get_position(body_id);
+            let x = pos.translation.vector.x;
+            let y = pos.translation.vector.y;
+
+            if x.abs() > 500.0 || y.abs() > 500.0 {
+                data.removec.insert(entity, Remove);
+                println!("removed entity for being OOB");
             }
         }
     }
