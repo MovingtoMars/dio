@@ -19,6 +19,7 @@ use self::MessageFromPhysicsThread::*;
 
 pub const PLAYER_GROUP_ID: usize = 1;
 pub const GENERIC_DYNAMIC_GROUP_ID: usize = 2;
+pub const DEAD_ENEMY_GROUP_ID: usize = 3;
 pub const PARTICLE_GROUP_ID: usize = 4;
 
 #[derive(Debug, Clone, Copy)]
@@ -29,6 +30,7 @@ pub enum CollisionGroupsKind {
     EmbeddedKnife,
     Knife,
     Player,
+    DeadEnemy,
 }
 
 impl CollisionGroupsKind {
@@ -48,6 +50,7 @@ impl CollisionGroupsKind {
                 g.modify_membership(GENERIC_DYNAMIC_GROUP_ID, true);
                 g.enable_interaction_with_sensors();
                 g.modify_blacklist(PARTICLE_GROUP_ID, true);
+                g.modify_whitelist(DEAD_ENEMY_GROUP_ID, false);
                 g.enable_interaction_with_static();
                 g
             }
@@ -56,6 +59,7 @@ impl CollisionGroupsKind {
                 g.set_membership(&[]);
                 g.modify_whitelist(GENERIC_DYNAMIC_GROUP_ID, true);
                 g.modify_whitelist(PARTICLE_GROUP_ID, true);
+                g.modify_whitelist(DEAD_ENEMY_GROUP_ID, true);
                 g.enable_interaction_with_sensors();
                 g
             }
@@ -66,11 +70,20 @@ impl CollisionGroupsKind {
             Knife => {
                 let mut g = GenericDynamic.to_collision_groups();
                 g.modify_blacklist(PLAYER_GROUP_ID, true);
+                g.modify_whitelist(DEAD_ENEMY_GROUP_ID, true);
                 g
             }
             Player => {
                 let mut g = GenericDynamic.to_collision_groups();
                 g.modify_membership(PLAYER_GROUP_ID, true);
+                g
+            }
+            DeadEnemy => {
+                // g.set_whitelist(&[]);
+                g.enable_interaction_with_static();
+                g.disable_interaction_with_sensors();
+                g.modify_membership(DEAD_ENEMY_GROUP_ID, true);
+                g.modify_blacklist(PARTICLE_GROUP_ID, true);
                 g
             }
         }

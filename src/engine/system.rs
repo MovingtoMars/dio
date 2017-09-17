@@ -45,6 +45,9 @@ pub fn register_systems<'a, 'b>(d: specs::DispatcherBuilder<'a, 'b>) -> specs::D
     let d = d.add(KnifeSystem, "KnifeSystem", &[]);
 
     let d = d.add_barrier();
+    let d = d.add(BasicEnemySystem, "BasicEnemySystem", &[]);
+
+    let d = d.add_barrier();
     let d = d.add(TimedRemoveSystem, "TimedRemoveSystem", &[]);
     let d = d.add(RemoveSystem, "RemoveSystem", &["TimedRemoveSystem"]);
 
@@ -294,6 +297,33 @@ impl<'a> specs::System<'a> for TimedRemoveSystem {
 
             if timed_remove.0 <= 0.0 {
                 data.removec.insert(entity, Remove);
+            }
+        }
+    }
+}
+
+
+#[derive(SystemData)]
+struct BasicEnemyData<'a> {
+    basic_enemyc: WS<'a, BasicEnemy>,
+    hitpointsc: RS<'a, Hitpoints>,
+    body_idc: WS<'a, RigidBodyID>,
+
+    entities: specs::Entities<'a>,
+    c: specs::Fetch<'a, SystemContext>,
+}
+
+struct BasicEnemySystem;
+
+impl<'a> specs::System<'a> for BasicEnemySystem {
+    type SystemData = BasicEnemyData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        for (enemy, hitpoints, &body_id) in (&mut data.basic_enemyc, &data.hitpointsc, &data.body_idc).join() {
+            if !enemy.is_dead && hitpoints.current() == 0 {
+                enemy.is_dead = true;
+                let physics = data.c.physics_thread_link.lock().unwrap();
+                physics.set_collision_groups_kind(body_id, CollisionGroupsKind::DeadEnemy);
             }
         }
     }

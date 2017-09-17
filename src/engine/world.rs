@@ -481,6 +481,7 @@ impl World {
             .with(renderable)
             .with(TimeStopStore::new())
             .with(Hitpoints::new(5))
+            .with(BasicEnemy::new())
             .build();
 
         let message = MessageToPhysicsThread::AddRigidBody {

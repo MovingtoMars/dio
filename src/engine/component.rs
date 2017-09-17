@@ -23,6 +23,7 @@ pub fn register_components(world: &mut specs::World) {
         Remove,
         TimedRemove,
         Name,
+        BasicEnemy,
     }
 }
 
@@ -268,5 +269,20 @@ impl Component for TimedRemove {
 pub struct Name(pub String);
 
 impl Component for Name {
+    type Storage = HashMapStorage<Self>;
+}
+
+#[derive(Debug, Clone)]
+pub struct BasicEnemy {
+    pub is_dead: bool,
+}
+
+impl BasicEnemy {
+    pub fn new() -> Self {
+        BasicEnemy { is_dead: false }
+    }
+}
+
+impl Component for BasicEnemy {
     type Storage = HashMapStorage<Self>;
 }
