@@ -24,6 +24,7 @@ pub fn register_components(world: &mut specs::World) {
         TimedRemove,
         Name,
         BasicEnemy,
+        Bullet,
     }
 }
 
@@ -83,6 +84,16 @@ impl RenderItem {
             kind: RenderItemKind::Info,
         }
     }
+
+    pub fn ellipse(rel_x: f32, rel_y: f32, w: f32, h: f32, rel_rotation: f32, color: [f32; 4]) -> Self {
+        RenderItem {
+            rel_x,
+            rel_y,
+            rel_rotation,
+            color,
+            kind: RenderItemKind::Ellipse { w, h },
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +101,7 @@ pub enum RenderItemKind {
     Rectangle { w: f32, h: f32 },
     Text { text: String, size: u32 },
     Info,
+    Ellipse { w: f32, h: f32 },
 }
 
 #[derive(Debug, Clone)]
@@ -284,5 +296,13 @@ impl BasicEnemy {
 }
 
 impl Component for BasicEnemy {
+    type Storage = HashMapStorage<Self>;
+}
+
+// TODO: CCD
+#[derive(Debug, Clone)]
+pub struct Bullet;
+
+impl Component for Bullet {
     type Storage = HashMapStorage<Self>;
 }

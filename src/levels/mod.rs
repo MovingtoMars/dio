@@ -5,6 +5,8 @@ use std::fmt::{self, Display, Formatter};
 
 use serde_json;
 
+use nphysics::math::Vector;
+
 use media;
 use engine::*;
 
@@ -52,11 +54,28 @@ pub struct Level {
     pub entities: Vec<LevelEntity>,
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct LevelVector {
+    x: f32,
+    y: f32,
+}
+
+impl LevelVector {
+    pub fn to_vector(self) -> Vector<N> {
+        Vector::new(self.x, self.y)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LevelEntity {
     Ground { rect: Rect },
     Crate { rect: Rect, material: CrateMaterial },
     Enemy { rect: Rect },
+    Bullet {
+        pos: LevelVector,
+        radius: N,
+        velocity: LevelVector,
+    },
 }
 
 impl Level {
@@ -74,6 +93,13 @@ impl Level {
                 }
                 LevelEntity::Enemy { rect } => {
                     world.new_enemy(rect);
+                }
+                LevelEntity::Bullet {
+                    pos,
+                    radius,
+                    velocity,
+                } => {
+                    world.new_bullet(pos.to_vector(), radius, velocity.to_vector());
                 }
             }
         }

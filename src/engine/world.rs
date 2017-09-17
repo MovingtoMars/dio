@@ -5,7 +5,7 @@ use std::thread;
 use std::mem::uninitialized;
 use std::collections::HashMap;
 
-use ncollide::shape::{Cuboid, ShapeHandle};
+use ncollide::shape::{Ball, Cuboid, ShapeHandle};
 use nphysics;
 use nphysics::math::{AngularInertia, Isometry, Orientation, Point, Rotation, Translation, Vector};
 use nphysics::volumetric::Volumetric;
@@ -496,6 +496,49 @@ impl World {
         };
 
         self.physics_thread_link.lock().unwrap().send.send(message);
+
+        entity
+    }
+
+    pub fn new_bullet(&mut self, pos: Vector<N>, radius: N, lin_vel: Vector<N>) -> Entity {
+        let shape = Ball::new(radius - BODY_MARGIN);
+        let id = self.new_rigid_body_id();
+
+        let density = 8000.0;
+
+        let renderable = Renderable::new(pos.x, pos.y, 0.0).with(RenderItem::ellipse(
+            0.0,
+            0.0,
+            radius * 2.0,
+            radius * 2.0,
+            0.0,
+            [0.0, 0.0, 1.0, 1.0],
+        ));
+
+        let entity = self.specs_world
+            .create_entity()
+            .with(id)
+            .with(renderable)
+            .with(TimeStopStore::new())
+            .with(Bullet)
+            .build();
+
+        let message = MessageToPhysicsThread::AddRigidBody {
+            id,
+            entity,
+            mass_properties: Some(shape.mass_properties(density)),
+            shape: ShapeHandle::new(shape),
+            restitution: 0.2,
+            friction: 0.1,
+            translation: pos,
+            collision_groups_kind: CollisionGroupsKind::GenericDynamic,
+        };
+
+        self.physics_thread_link.lock().unwrap().send.send(message);
+        self.physics_thread_link
+            .lock()
+            .unwrap()
+            .set_lin_vel(id, lin_vel);
 
         entity
     }

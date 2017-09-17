@@ -209,6 +209,9 @@ fn process_event(
                     Key::A => world.set_player_moving_left(true),
                     Key::D => world.set_player_moving_right(true),
                     Key::C => world.set_player_picking_up(true),
+                    Key::E => {
+                        world.new_bullet(Vector::new(0.0, 1.5), 0.08, Vector::new(20.0, 0.0)); // XXX
+                    }
                     _ => {}
                 }
             }
