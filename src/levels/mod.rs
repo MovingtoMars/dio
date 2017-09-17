@@ -62,7 +62,7 @@ pub struct LevelVector {
 
 impl LevelVector {
     pub fn to_vector(self) -> Vector<N> {
-        Vector::new(self.x, self.y)
+        Vector::new(self.x as N, self.y as N)
     }
 }
 

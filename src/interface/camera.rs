@@ -1,7 +1,9 @@
+use engine::N;
+
 pub struct Camera {
     // the position of the world which is at the centre of the screen (in metres)
-    x: f32,
-    y: f32,
+    x: N,
+    y: N,
 
     // the position in the window where the mouse pointer is
     pub mouse_x: f64,
@@ -14,7 +16,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(x: f32, y: f32, win_w: u32, win_h: u32, pixels_per_metre: f64) -> Camera {
+    pub fn new(x: N, y: N, win_w: u32, win_h: u32, pixels_per_metre: f64) -> Camera {
         Camera {
             x: x,
             y: y,
@@ -26,7 +28,7 @@ impl Camera {
         }
     }
 
-    pub fn set_pos_smooth(&mut self, x: f32, y: f32) {
+    pub fn set_pos_smooth(&mut self, x: N, y: N) {
         let (vw, vh) = self.game_viewport_size();
 
         let scroll_window_w = vw * 0.1;
@@ -49,41 +51,41 @@ impl Camera {
         self.win_h = h;
     }
 
-    pub fn pos(&self) -> (f32, f32) {
+    pub fn pos(&self) -> (N, N) {
         (self.x, self.y)
     }
 
-    pub fn game_viewport_size(&self) -> (f32, f32) {
+    pub fn game_viewport_size(&self) -> (N, N) {
         self.pair_pixels_to_metres(self.win_w as f64, self.win_h as f64)
     }
 
-    pub fn metres_to_pixels(&self, val: f32) -> f64 {
+    pub fn metres_to_pixels(&self, val: N) -> f64 {
         val as f64 * self.pixels_per_metre
     }
 
-    pub fn pixels_to_metres(&self, val: f64) -> f32 {
-        (val / self.pixels_per_metre) as f32
+    pub fn pixels_to_metres(&self, val: f64) -> N {
+        (val / self.pixels_per_metre) as N
     }
 
-    pub fn pair_metres_to_pixels(&self, x: f32, y: f32) -> (f64, f64) {
+    pub fn pair_metres_to_pixels(&self, x: N, y: N) -> (f64, f64) {
         (self.metres_to_pixels(x), self.metres_to_pixels(y))
     }
 
-    pub fn pair_pixels_to_metres(&self, x: f64, y: f64) -> (f32, f32) {
+    pub fn pair_pixels_to_metres(&self, x: f64, y: f64) -> (N, N) {
         (self.pixels_to_metres(x), self.pixels_to_metres(y))
     }
 
-    pub fn pos_to_screen(&self, x: f32, y: f32) -> (f64, f64) {
+    pub fn pos_to_screen(&self, x: N, y: N) -> (f64, f64) {
         let (px, py) = self.pair_metres_to_pixels(x - self.x, y - self.y);
         (px + (self.win_w / 2) as f64, py + (self.win_h / 2) as f64)
     }
 
-    pub fn screen_to_pos(&self, x: f64, y: f64) -> (f32, f32) {
+    pub fn screen_to_pos(&self, x: f64, y: f64) -> (N, N) {
         let (wx, wy) = self.pair_pixels_to_metres(x - (self.win_w / 2) as f64, y - (self.win_h / 2) as f64);
         (wx + self.x, wy + self.y)
     }
 
-    pub fn array_pos_to_screen(&self, pos: [f32; 4]) -> [f64; 4] {
+    pub fn array_pos_to_screen(&self, pos: [N; 4]) -> [f64; 4] {
         let mut npos = [0.0; 4];
         npos[0] = self.metres_to_pixels(pos[0] - self.x) + (self.win_w / 2) as f64;
         npos[1] = self.metres_to_pixels(pos[1] - self.y) + (self.win_h / 2) as f64;

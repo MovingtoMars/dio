@@ -13,7 +13,7 @@ pub type WS<'a, T> = specs::WriteStorage<'a, T>;
 
 #[derive(Clone)]
 pub struct SystemContext {
-    pub time: f32,
+    pub time: N,
     pub physics_thread_link: Arc<Mutex<PhysicsThreadLink>>,
     pub time_is_stopped: bool,
     pub contact_map: HashMap<RigidBodyID, Vec<Contact>>,
@@ -94,9 +94,9 @@ struct PlayerData<'a> {
 }
 
 
-const USAIN_BOLT_MAX_SPEED: f32 = 12.4;
-const PLAYER_MAX_SPEED: f32 = USAIN_BOLT_MAX_SPEED * 0.5;
-const PLAYER_ACCELERATION: f32 = PLAYER_MAX_SPEED * 2.5;
+const USAIN_BOLT_MAX_SPEED: N = 12.4;
+const PLAYER_MAX_SPEED: N = USAIN_BOLT_MAX_SPEED * 0.5;
+const PLAYER_ACCELERATION: N = PLAYER_MAX_SPEED * 2.5;
 
 struct PlayerSystem;
 

@@ -126,7 +126,7 @@ fn main() {
     stats_handler.finish();
 }
 
-pub const KNIFE_INIT_SPEED: f32 = 14.0;
+pub const KNIFE_INIT_SPEED: N = 14.0;
 
 fn spawn_knife(world: &mut World, cam: &mut Camera) {
     let (kx, ky) = cam.screen_to_pos(cam.mouse_x, cam.mouse_y);
@@ -162,7 +162,7 @@ fn process_event(
     keys_down: &mut HashSet<Key>,
 ) -> bool {
     if let &Input::Update(UpdateArgs { dt }) = event {
-        world.tick(dt as f32);
+        world.tick(dt as N);
 
         let win_draw_size = window.draw_size();
         cam.set_window_dimensions(win_draw_size.width, win_draw_size.height);

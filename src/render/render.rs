@@ -3,7 +3,7 @@ use piston_window::character::CharacterCache;
 use specs::Join;
 
 use engine::World;
-use engine::{Hitpoints, Name, RenderItem, RenderItemKind, Renderable};
+use engine::{Hitpoints, Name, RenderItem, RenderItemKind, Renderable, N};
 use interface::camera::Camera;
 use media::*;
 
@@ -149,7 +149,7 @@ impl Fonts {
 }
 
 // arrays are in [x, y, w, h] format
-pub fn render_image(win: &mut PistonWindow, input: &Input, cam: &Camera, image_tex: &ImageHandle, target: [f32; 4], source: Option<[f64; 4]>) {
+pub fn render_image(win: &mut PistonWindow, input: &Input, cam: &Camera, image_tex: &ImageHandle, target: [N; 4], source: Option<[f64; 4]>) {
     let image_bounds = Image {
         color: None,
         rectangle: Some(cam.array_pos_to_screen(target)),
@@ -168,7 +168,7 @@ pub fn render_image(win: &mut PistonWindow, input: &Input, cam: &Camera, image_t
 
 // vr - vertical radius
 // hr - horizontal radius
-pub fn fill_ellipse(c: Context, g: &mut G2d, cam: &Camera, colour: [f32; 4], cx: f32, cy: f32, w: f32, h: f32, rot: f32) {
+pub fn fill_ellipse(c: Context, g: &mut G2d, cam: &Camera, colour: [f32; 4], cx: N, cy: N, w: N, h: N, rot: N) {
     let (cx, cy) = cam.pos_to_screen(cx, cy);
     let (w, h) = cam.pair_metres_to_pixels(w, h);
     let rect = [0.0, 0.0, w, h];
@@ -190,7 +190,7 @@ pub fn fill_ellipse(c: Context, g: &mut G2d, cam: &Camera, colour: [f32; 4], cx:
 }
 
 // TODO support for origin coords
-pub fn fill_rectangle(c: Context, g: &mut G2d, cam: &Camera, colour: [f32; 4], cx: f32, cy: f32, w: f32, h: f32, rot: f32) {
+pub fn fill_rectangle(c: Context, g: &mut G2d, cam: &Camera, colour: [f32; 4], cx: N, cy: N, w: N, h: N, rot: N) {
     let (zx, zy) = cam.pos_to_screen(cx, cy);
     let (w, h) = cam.pair_metres_to_pixels(w, h);
     let rect = [0.0, 0.0, w, h];
@@ -208,26 +208,26 @@ pub fn fill_rectangle(c: Context, g: &mut G2d, cam: &Camera, colour: [f32; 4], c
 #[derive(Debug, Clone, Copy)]
 pub struct DrawTextArgs {
     color: [f32; 4],
-    x: f32,
-    y: f32,
+    x: N,
+    y: N,
     center_coords: bool,
     scale: bool,
     size: u32,
-    rot: f32,
-    origin_x: f32,
-    origin_y: f32,
+    rot: N,
+    origin_x: N,
+    origin_y: N,
 }
 
 /// origin coords are used as origin for rotation
 pub fn draw_text(c: Context, g: &mut G2d, cam: &Camera, fonts: &mut Fonts, text_: &str, args: DrawTextArgs) {
     let (zx, zy) = if args.scale {
-        cam.pos_to_screen(args.x, args.y)
+        cam.pos_to_screen(args.x as N, args.y as N)
     } else {
         (args.x as f64, args.y as f64)
     };
 
     let (origin_zx, origin_zy) = if args.scale {
-        cam.pos_to_screen(args.origin_x, args.origin_y)
+        cam.pos_to_screen(args.origin_x as N, args.origin_y as N)
     } else {
         (args.origin_x as f64, args.origin_y as f64)
     };

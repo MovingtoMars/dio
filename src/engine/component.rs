@@ -43,16 +43,16 @@ impl Component for RigidBodyID {
 
 #[derive(Debug, Clone)]
 pub struct RenderItem {
-    pub rel_rotation: f32,
-    pub rel_x: f32,
-    pub rel_y: f32,
+    pub rel_rotation: N,
+    pub rel_x: N,
+    pub rel_y: N,
     pub color: [f32; 4],
 
     pub kind: RenderItemKind,
 }
 
 impl RenderItem {
-    pub fn rectangle(rel_x: f32, rel_y: f32, w: f32, h: f32, rel_rotation: f32, color: [f32; 4]) -> Self {
+    pub fn rectangle(rel_x: N, rel_y: N, w: N, h: N, rel_rotation: N, color: [f32; 4]) -> Self {
         RenderItem {
             rel_x,
             rel_y,
@@ -62,7 +62,7 @@ impl RenderItem {
         }
     }
 
-    pub fn text<S: Into<String>>(rel_x: f32, rel_y: f32, rel_rotation: f32, color: [f32; 4], text: S, size: u32) -> Self {
+    pub fn text<S: Into<String>>(rel_x: N, rel_y: N, rel_rotation: N, color: [f32; 4], text: S, size: u32) -> Self {
         RenderItem {
             rel_x,
             rel_y,
@@ -75,7 +75,7 @@ impl RenderItem {
         }
     }
 
-    pub fn info(rel_x: f32, rel_y: f32, rel_rotation: f32, color: [f32; 4]) -> Self {
+    pub fn info(rel_x: N, rel_y: N, rel_rotation: N, color: [f32; 4]) -> Self {
         RenderItem {
             rel_x,
             rel_y,
@@ -85,7 +85,7 @@ impl RenderItem {
         }
     }
 
-    pub fn ellipse(rel_x: f32, rel_y: f32, w: f32, h: f32, rel_rotation: f32, color: [f32; 4]) -> Self {
+    pub fn ellipse(rel_x: N, rel_y: N, w: N, h: N, rel_rotation: N, color: [f32; 4]) -> Self {
         RenderItem {
             rel_x,
             rel_y,
@@ -98,22 +98,22 @@ impl RenderItem {
 
 #[derive(Debug, Clone)]
 pub enum RenderItemKind {
-    Rectangle { w: f32, h: f32 },
+    Rectangle { w: N, h: N },
     Text { text: String, size: u32 },
     Info,
-    Ellipse { w: f32, h: f32 },
+    Ellipse { w: N, h: N },
 }
 
 #[derive(Debug, Clone)]
 pub struct Renderable {
-    pub x: f32,
-    pub y: f32,
-    pub rotation: f32,
+    pub x: N,
+    pub y: N,
+    pub rotation: N,
     pub items: Vec<RenderItem>,
 }
 
 impl Renderable {
-    pub fn new(x: f32, y: f32, rotation: f32) -> Self {
+    pub fn new(x: N, y: N, rotation: N) -> Self {
         Renderable {
             x,
             y,

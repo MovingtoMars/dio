@@ -18,10 +18,10 @@ pub type N = f32;
 pub type RigidBody = nphysics::object::RigidBody<N>;
 pub type RigidBodyHandle = nphysics::object::RigidBodyHandle<N>;
 
-pub const BODY_MARGIN: f32 = 0.04;
+pub const BODY_MARGIN: N = 0.04;
 
-pub const PLAYER_HALF_WIDTH: f32 = 0.35;
-pub const PLAYER_HALF_HEIGHT: f32 = 0.85;
+pub const PLAYER_HALF_WIDTH: N = 0.35;
+pub const PLAYER_HALF_HEIGHT: N = 0.85;
 
 // TODO event system: entities aren't really added until events processed
 
@@ -116,7 +116,7 @@ impl World {
         self.specs_world.entities()
     }
 
-    pub fn tick(&mut self, time: f32) {
+    pub fn tick(&mut self, time: N) {
         assert!(time > 0.0);
 
         if self.time_stop_remaining.is_some() {
@@ -187,7 +187,7 @@ impl World {
     }
 
     /// Returns true if sucessfully stops time, false otherwise.
-    pub fn stop_time(&mut self, dur: f32) -> bool {
+    pub fn stop_time(&mut self, dur: N) -> bool {
         if self.time_stop_remaining.is_some() {
             return false;
         }
@@ -253,7 +253,7 @@ impl World {
         }
     }
 
-    pub fn time_stop_remaining(&self) -> Option<f32> {
+    pub fn time_stop_remaining(&self) -> Option<N> {
         self.time_stop_remaining
     }
 
@@ -344,7 +344,7 @@ impl World {
     }
 
     // Make sure to set world.player to the returned entity!
-    fn new_player(&mut self, x: f32, y: f32) -> Entity {
+    fn new_player(&mut self, x: N, y: N) -> Entity {
         let hw = PLAYER_HALF_WIDTH;
         let hh = PLAYER_HALF_HEIGHT;
 
@@ -393,7 +393,7 @@ impl World {
         };
 
 
-        let sensor_height = 0.02;
+        let sensor_height = 0.03;
         let sensor_shape = Cuboid::new(Vector::new(hw * 0.90, sensor_height));
         let rel_pos = Isometry::from_parts(
             Translation::from_vector(Vector::new(0.0, hh + sensor_height)),
@@ -549,7 +549,7 @@ impl World {
         entity
     }
 
-    pub fn player_throw_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Option<Entity> {
+    pub fn player_throw_knife(&mut self, x: N, y: N, velocity: Vector<N>) -> Option<Entity> {
         {
             let mut playerc = self.specs_world.write::<Player>();
             let player = playerc.get_mut(self.player).unwrap();
@@ -563,7 +563,7 @@ impl World {
         Some(self.new_knife(x, y, velocity))
     }
 
-    pub fn new_knife(&mut self, x: f32, y: f32, velocity: Vector<N>) -> Entity {
+    pub fn new_knife(&mut self, x: N, y: N, velocity: Vector<N>) -> Entity {
         let hw = 0.18;
         let hh = 0.08;
         let shape = Cuboid::new(Vector::new(hw - BODY_MARGIN, hh - BODY_MARGIN));
