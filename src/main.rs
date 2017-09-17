@@ -2,6 +2,8 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+// TODO fix player jumping on bullets
+
 extern crate chan;
 extern crate gfx_device_gl;
 extern crate nalgebra as na;
