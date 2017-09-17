@@ -94,7 +94,7 @@ fn main() {
     let mut fonts = render::Fonts::new(&media_handle);
     level.save(&media_handle, "default.level.json").unwrap();
 
-    window.set_ups(80);
+    window.set_ups(60);
 
     let mut keys_down = HashSet::new();
 
