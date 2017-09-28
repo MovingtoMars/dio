@@ -48,18 +48,18 @@ fn main() {
 
     let opengl = OpenGL::V2_1;
 
+
     let mut stats_handler = stat::Handler::new();
     let mut stats = stats_handler.get();
     stats.num_startups += 1;
     stats_handler.set(stats);
 
     let mut window: PistonWindow = WindowSettings::new("dio", [INIT_WIN_WIDTH, INIT_WIN_HEIGHT])
-                                //    .opengl(opengl)
-                                   .exit_on_esc(true)
-                                   .samples(4)
-                                   .vsync(true)
-                                   .build()
-                                   .unwrap();
+        .exit_on_esc(true)
+        .samples(4)
+        .vsync(true)
+        .build()
+        .unwrap();
 
     // let level = levels::Level {
     //     name: String::from("Test Level"),
